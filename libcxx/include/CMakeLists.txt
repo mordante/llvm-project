@@ -136,6 +136,7 @@ set(files
   __format/format_parse_context.h
   __format/format_string.h
   __format/formatter.h
+  __format/formatter_char.h
   __format/formatter_integer.h
   __format/formatter_integral.h
   __format/formatter_string.h
