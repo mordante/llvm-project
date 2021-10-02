@@ -26,6 +26,30 @@
 #define SV(S) MAKE_STRING_VIEW(CharT, S)
 #define CSTR(S) MAKE_CSTRING(CharT, S)
 
+#ifdef TEST_FORMAT_USE_COMPILE_TIME_CHECK
+#  define CHECK_TEMPLATE_ARGS
+#  define CHECK_FUNCTION_ARGS ... // 0 needed but allows comma before macro
+#  define CALL_CHECK_FUNCTION(f) f()
+#  define check_ill_formed(what, fmt, ...)                                                                             \
+    static_assert([]<class = void>() {                                                                                 \
+      if constexpr (requires {                                                                                         \
+                      []<int>() {                                                                                      \
+                      }.template operator()<(test_basic_format_string<typename decltype(fmt)::value_type               \
+                                                                          __VA_OPT__(, decltype((__VA_ARGS__)))>(fmt), \
+                                             void(), 0)>();                                                            \
+                    })                                                                                                 \
+        return false;                                                                                                  \
+      else                                                                                                             \
+        return true;                                                                                                   \
+    }());                                                                                                              \
+    /* */
+#else
+#  define CHECK_TEMPLATE_ARGS , class TestFunction, class ExceptionTest
+#  define CHECK_FUNCTION_ARGS TestFunction check, ExceptionTest check_exception
+#  define CALL_CHECK_FUNCTION(f) f(check, check_exception)
+#  define check_ill_formed check_exception
+#endif
+
 template <class T>
 struct context {};
 
@@ -172,9 +196,10 @@ case #T[0]:                                                                     
 
   return result;
 }
+#if 0
+template <class CharT, class T CHECK_TEMPLATE_ARGS>
+void format_test_string(T world, T universe, CHECK_FUNCTION_ARGS) {
 
-template <class CharT, class T, class TestFunction, class ExceptionTest>
-void format_test_string(T world, T universe, TestFunction check, ExceptionTest check_exception) {
 
   // *** Valid input tests ***
   // Unsed argument is ignored. TODO FMT what does the Standard mandate?
@@ -232,13 +257,13 @@ void format_test_string(T world, T universe, TestFunction check, ExceptionTest c
   check_exception("A format-spec width field shouldn't have a leading zero", SV("hello {:0}"), world);
 
   // *** width ***
-#ifdef _LIBCPP_VERSION
+#  ifdef _LIBCPP_VERSION
   // This limit isn't specified in the Standard.
   static_assert(std::__format::__number_max == 2'147'483'647, "Update the assert and the test.");
   check_exception("The numeric value of the format-spec is too large", SV("{:2147483648}"), world);
   check_exception("The numeric value of the format-spec is too large", SV("{:5000000000}"), world);
   check_exception("The numeric value of the format-spec is too large", SV("{:10000000000}"), world);
-#endif
+#  endif
 
   check_exception("A format-spec width field replacement should have a positive value", SV("hello {:{}}"), world, 0);
   check_exception("A format-spec arg-id replacement shouldn't have a negative value", SV("hello {:{}}"), world, -1);
@@ -253,13 +278,13 @@ void format_test_string(T world, T universe, TestFunction check, ExceptionTest c
   check_exception("Invalid arg-id", SV("hello {0:{01}}"), world, 1);
 
   // *** precision ***
-#ifdef _LIBCPP_VERSION
+#  ifdef _LIBCPP_VERSION
   // This limit isn't specified in the Standard.
   static_assert(std::__format::__number_max == 2'147'483'647, "Update the assert and the test.");
   check_exception("The numeric value of the format-spec is too large", SV("{:.2147483648}"), world);
   check_exception("The numeric value of the format-spec is too large", SV("{:.5000000000}"), world);
   check_exception("The numeric value of the format-spec is too large", SV("{:.10000000000}"), world);
-#endif
+#  endif
 
   // Precision 0 allowed, but not useful for string arguments.
   check(STR("hello "), SV("hello {:.{}}"), world, 0);
@@ -282,14 +307,16 @@ void format_test_string(T world, T universe, TestFunction check, ExceptionTest c
   check_exception("The format-spec should consume the input or end with a '}'", SV("hello {:L}"), world);
 
   // *** type ***
+#  ifndef TEST_FORMAT_USE_COMPILE_TIME_CHECK
   for (const auto& fmt : invalid_types<CharT>("s"))
     check_exception("The format-spec type has a type not supported for a string argument", fmt, world);
+#  endif
 }
 
 template <class CharT, class TestFunction>
 void format_test_string_unicode(TestFunction check) {
   (void)check;
-#ifndef TEST_HAS_NO_UNICODE
+#  ifndef TEST_HAS_NO_UNICODE
   // ß requires one column
   check(STR("aßc"), SV("{}"), STR("aßc"));
 
@@ -321,7 +348,7 @@ void format_test_string_unicode(TestFunction check) {
   check(STR("a\u1110c---"), SV("{:-<7}"), STR("a\u1110c"));
   check(STR("-a\u1110c--"), SV("{:-^7}"), STR("a\u1110c"));
   check(STR("---a\u1110c"), SV("{:->7}"), STR("a\u1110c"));
-#endif // TEST_HAS_NO_UNICODE
+#  endif // TEST_HAS_NO_UNICODE
 }
 
 template <class CharT, class TestFunction, class ExceptionTest>
@@ -393,8 +420,10 @@ void format_test_bool(TestFunction check, ExceptionTest check_exception) {
   // See locale-specific_form.pass.cpp
 
   // *** type ***
+#  ifndef TEST_FORMAT_USE_COMPILE_TIME_CHECK
   for (const auto& fmt : invalid_types<CharT>("bBcdosxX"))
     check_exception("The format-spec type has a type not supported for a bool argument", fmt, true);
+#  endif
 }
 
 template <class CharT, class TestFunction, class ExceptionTest>
@@ -440,8 +469,10 @@ void format_test_bool_as_char(TestFunction check, ExceptionTest check_exception)
   check(STR("answer is '*'"), SV("answer is '{:Lc}'"), '*');
 
   // *** type ***
+#  ifndef TEST_FORMAT_USE_COMPILE_TIME_CHECK
   for (const auto& fmt : invalid_types<CharT>("bBcdosxX"))
     check_exception("The format-spec type has a type not supported for a bool argument", fmt, true);
+#  endif
 }
 
 template <class CharT, class TestFunction, class ExceptionTest>
@@ -526,8 +557,10 @@ void format_test_bool_as_integer(TestFunction check, ExceptionTest check_excepti
   // See locale-specific_form.pass.cpp
 
   // *** type ***
+#  ifndef TEST_FORMAT_USE_COMPILE_TIME_CHECK
   for (const auto& fmt : invalid_types<CharT>("bBcdosxX"))
     check_exception("The format-spec type has a type not supported for a bool argument", fmt, true);
+#  endif
 }
 
 template <class I, class CharT, class TestFunction, class ExceptionTest>
@@ -658,8 +691,10 @@ void format_test_integer_as_integer(TestFunction check, ExceptionTest check_exce
   // See locale-specific_form.pass.cpp
 
   // *** type ***
+#  ifndef TEST_FORMAT_USE_COMPILE_TIME_CHECK
   for (const auto& fmt : invalid_types<CharT>("bBcdoxX"))
     check_exception("The format-spec type has a type not supported for an integer argument", fmt, 42);
+#  endif
 }
 
 template <class I, class CharT, class TestFunction, class ExceptionTest>
@@ -696,9 +731,10 @@ void format_test_integer_as_char(TestFunction check, ExceptionTest check_excepti
   check(STR("answer is '*'"), SV("answer is '{:Lc}'"), I(42));
 
   // *** type ***
+#  ifndef TEST_FORMAT_USE_COMPILE_TIME_CHECK
   for (const auto& fmt : invalid_types<CharT>("bBcdoxX"))
     check_exception("The format-spec type has a type not supported for an integer argument", fmt, I(42));
-
+#  endif
   // *** Validate range ***
   // TODO FMT Update test after adding 128-bit support.
   if constexpr (sizeof(I) <= sizeof(long long)) {
@@ -729,9 +765,9 @@ void format_test_signed_integer(TestFunction check, ExceptionTest check_exceptio
   format_test_integer<int, CharT>(check, check_exception);
   format_test_integer<long, CharT>(check, check_exception);
   format_test_integer<long long, CharT>(check, check_exception);
-#ifndef TEST_HAS_NO_INT128
+#  ifndef TEST_HAS_NO_INT128
   format_test_integer<__int128_t, CharT>(check, check_exception);
-#endif
+#  endif
   // *** check the minma and maxima ***
   check(STR("-0b10000000"), SV("{:#b}"), std::numeric_limits<int8_t>::min());
   check(STR("-0200"), SV("{:#o}"), std::numeric_limits<int8_t>::min());
@@ -786,9 +822,9 @@ void format_test_unsigned_integer(TestFunction check, ExceptionTest check_except
   format_test_integer<unsigned, CharT>(check, check_exception);
   format_test_integer<unsigned long, CharT>(check, check_exception);
   format_test_integer<unsigned long long, CharT>(check, check_exception);
-#ifndef TEST_HAS_NO_INT128
+#  ifndef TEST_HAS_NO_INT128
   format_test_integer<__uint128_t, CharT>(check, check_exception);
-#endif
+#  endif
   // *** test the maxima ***
   check(STR("0b11111111"), SV("{:#b}"), std::numeric_limits<uint8_t>::max());
   check(STR("0377"), SV("{:#o}"), std::numeric_limits<uint8_t>::max());
@@ -813,10 +849,9 @@ void format_test_unsigned_integer(TestFunction check, ExceptionTest check_except
 
   // TODO FMT Add __uint128_t test after implementing full range.
 }
-
-template <class CharT, class TestFunction, class ExceptionTest>
-void format_test_char(TestFunction check, ExceptionTest check_exception) {
-
+#endif
+template <class CharT CHECK_TEMPLATE_ARGS>
+void format_test_char(CHECK_FUNCTION_ARGS) {
   // ***** Char type *****
   // *** align-fill & width ***
   check(STR("answer is '*     '"), SV("answer is '{:6}'"), CharT('*'));
@@ -838,30 +873,30 @@ void format_test_char(TestFunction check, ExceptionTest check_exception) {
   check(STR("answer is '--*---'"), SV("answer is '{:-^6c}'"), CharT('*'));
 
   // *** Sign ***
-  check_exception("A sign field isn't allowed in this format-spec", SV("{:-}"), CharT('*'));
-  check_exception("A sign field isn't allowed in this format-spec", SV("{:+}"), CharT('*'));
-  check_exception("A sign field isn't allowed in this format-spec", SV("{: }"), CharT('*'));
+  check_ill_formed("A sign field isn't allowed in this format-spec", SV("{:-}"), CharT('*'));
+  check_ill_formed("A sign field isn't allowed in this format-spec", SV("{:+}"), CharT('*'));
+  check_ill_formed("A sign field isn't allowed in this format-spec", SV("{: }"), CharT('*'));
 
-  check_exception("A sign field isn't allowed in this format-spec", SV("{:-c}"), CharT('*'));
-  check_exception("A sign field isn't allowed in this format-spec", SV("{:+c}"), CharT('*'));
-  check_exception("A sign field isn't allowed in this format-spec", SV("{: c}"), CharT('*'));
+  check_ill_formed("A sign field isn't allowed in this format-spec", SV("{:-c}"), CharT('*'));
+  check_ill_formed("A sign field isn't allowed in this format-spec", SV("{:+c}"), CharT('*'));
+  check_ill_formed("A sign field isn't allowed in this format-spec", SV("{: c}"), CharT('*'));
 
   // *** alternate form ***
-  check_exception("An alternate form field isn't allowed in this format-spec", SV("{:#}"), CharT('*'));
-  check_exception("An alternate form field isn't allowed in this format-spec", SV("{:#c}"), CharT('*'));
+  check_ill_formed("An alternate form field isn't allowed in this format-spec", SV("{:#}"), CharT('*'));
+  check_ill_formed("An alternate form field isn't allowed in this format-spec", SV("{:#c}"), CharT('*'));
 
   // *** zero-padding ***
-  check_exception("A zero-padding field isn't allowed in this format-spec", SV("{:0}"), CharT('*'));
-  check_exception("A zero-padding field isn't allowed in this format-spec", SV("{:0c}"), CharT('*'));
+  check_ill_formed("A zero-padding field isn't allowed in this format-spec", SV("{:0}"), CharT('*'));
+  check_ill_formed("A zero-padding field isn't allowed in this format-spec", SV("{:0c}"), CharT('*'));
 
   // *** precision ***
-  check_exception("The format-spec should consume the input or end with a '}'", SV("{:.}"), CharT('*'));
-  check_exception("The format-spec should consume the input or end with a '}'", SV("{:.0}"), CharT('*'));
-  check_exception("The format-spec should consume the input or end with a '}'", SV("{:.42}"), CharT('*'));
+  check_ill_formed("The format-spec should consume the input or end with a '}'", SV("{:.}"), CharT('*'));
+  check_ill_formed("The format-spec should consume the input or end with a '}'", SV("{:.0}"), CharT('*'));
+  check_ill_formed("The format-spec should consume the input or end with a '}'", SV("{:.42}"), CharT('*'));
 
-  check_exception("The format-spec should consume the input or end with a '}'", SV("{:.c}"), CharT('*'));
-  check_exception("The format-spec should consume the input or end with a '}'", SV("{:.0c}"), CharT('*'));
-  check_exception("The format-spec should consume the input or end with a '}'", SV("{:.42c}"), CharT('*'));
+  check_ill_formed("The format-spec should consume the input or end with a '}'", SV("{:.c}"), CharT('*'));
+  check_ill_formed("The format-spec should consume the input or end with a '}'", SV("{:.0c}"), CharT('*'));
+  check_ill_formed("The format-spec should consume the input or end with a '}'", SV("{:.42c}"), CharT('*'));
 
   // *** locale-specific form ***
   // Note it has no effect but it's allowed.
@@ -869,12 +904,15 @@ void format_test_char(TestFunction check, ExceptionTest check_exception) {
   check(STR("answer is '*'"), SV("answer is '{:Lc}'"), '*');
 
   // *** type ***
-  for (const auto& fmt : invalid_types<CharT>("bBcdoxX"))
+#ifndef TEST_FORMAT_USE_COMPILE_TIME_CHECK
+  for (const auto& fmt : invalid_types<CharT>("bBcdoxX")) {
     check_exception("The format-spec type has a type not supported for a char argument", fmt, CharT('*'));
+  }
+#endif
 }
 
-template <class CharT, class TestFunction, class ExceptionTest>
-void format_test_char_as_integer(TestFunction check, ExceptionTest check_exception) {
+template <class CharT CHECK_TEMPLATE_ARGS>
+void format_test_char_as_integer(CHECK_FUNCTION_ARGS) {
   // *** align-fill & width ***
   check(STR("answer is '42'"), SV("answer is '{:<1d}'"), CharT('*'));
 
@@ -927,18 +965,20 @@ void format_test_char_as_integer(TestFunction check, ExceptionTest check_excepti
   check(STR("answer is +0X00000002A"), SV("answer is {:+#012X}"), CharT('*'));
 
   // *** precision ***
-  check_exception("The format-spec should consume the input or end with a '}'", SV("{:.d}"), CharT('*'));
-  check_exception("The format-spec should consume the input or end with a '}'", SV("{:.0d}"), CharT('*'));
-  check_exception("The format-spec should consume the input or end with a '}'", SV("{:.42d}"), CharT('*'));
+  check_ill_formed("The format-spec should consume the input or end with a '}'", SV("{:.d}"), CharT('*'));
+  check_ill_formed("The format-spec should consume the input or end with a '}'", SV("{:.0d}"), CharT('*'));
+  check_ill_formed("The format-spec should consume the input or end with a '}'", SV("{:.42d}"), CharT('*'));
 
   // *** locale-specific form ***
   // See locale-specific_form.pass.cpp
 
   // *** type ***
-  for (const auto& fmt : invalid_types<CharT>("bBcdoxX"))
-    check_exception("The format-spec type has a type not supported for a char argument", fmt, '*');
+#ifndef TEST_FORMAT_USE_COMPILE_TIME_CHECK
+  for (auto fmt : invalid_types<CharT>("bBcdoxX"))
+    check_ill_formed("The format-spec type has a type not supported for a char argument", fmt, '*');
+#endif
 }
-
+#if 0
 template <class F, class CharT, class TestFunction>
 void format_test_floating_point_hex_lower_case(TestFunction check) {
   auto nan_pos = std::numeric_limits<F>::quiet_NaN(); // "nan"
@@ -2418,8 +2458,10 @@ void format_test_floating_point(TestFunction check, ExceptionTest check_exceptio
   format_test_floating_point_default_precision<F, CharT>(check);
 
   // *** type ***
+#  ifndef TEST_FORMAT_USE_COMPILE_TIME_CHECK
   for (const auto& fmt : invalid_types<CharT>("aAeEfFgG"))
     check_exception("The format-spec type has a type not supported for a floating-point argument", fmt, F(1));
+#  endif
 }
 
 template <class CharT, class TestFunction, class ExceptionTest>
@@ -2459,12 +2501,14 @@ void format_test_pointer(TestFunction check, ExceptionTest check_exception) {
   check_exception("The format-spec should consume the input or end with a '}'", SV("{:L}"), P(nullptr));
 
   // *** type ***
+#  ifndef TEST_FORMAT_USE_COMPILE_TIME_CHECK
   for (const auto& fmt : invalid_types<CharT>("p"))
     check_exception("The format-spec type has a type not supported for a pointer argument", fmt, P(nullptr));
+#  endif
 }
-
-template <class CharT, class TestFunction, class ExceptionTest>
-void format_test_handle(TestFunction check, ExceptionTest check_exception) {
+#endif
+template <class CharT CHECK_TEMPLATE_ARGS>
+void format_test_handle(CHECK_FUNCTION_ARGS) {
   // *** Valid permuatations ***
   check(STR("answer is '0xaaaa'"), SV("answer is '{}'"), status::foo);
   check(STR("answer is '0xaaaa'"), SV("answer is '{:x}'"), status::foo);
@@ -2482,19 +2526,28 @@ void format_test_handle(TestFunction check, ExceptionTest check_exception) {
   check(STR("answer is 'foobar'"), SV("answer is '{:s}'"), status::foobar);
 
   // *** type ***
+#ifndef TEST_FORMAT_USE_COMPILE_TIME_CHECK
   for (const auto& fmt : invalid_types<CharT>("xXs"))
     check_exception("The format-spec type has a type not supported for a status argument", fmt, status::foo);
+#endif
 }
-
+#if 0
 template <class CharT, class TestFunction, class ExceptionTest>
 void format_test_pointer(TestFunction check, ExceptionTest check_exception) {
   format_test_pointer<std::nullptr_t, CharT>(check, check_exception);
   format_test_pointer<void*, CharT>(check, check_exception);
   format_test_pointer<const void*, CharT>(check, check_exception);
-}
 
-template <class CharT, class TestFunction, class ExceptionTest>
-void format_tests(TestFunction check, ExceptionTest check_exception) {
+  // *** type ***
+  for (const auto& fmt : invalid_types<CharT>("bBcdoxX"))
+    check_ill_formed(
+        "The format-spec type has a type not supported for a char argument",
+        std::basic_string_view<CharT>(fmt), '*');
+}
+#endif
+
+template <class CharT CHECK_TEMPLATE_ARGS>
+void format_tests(CHECK_FUNCTION_ARGS) {
   // *** Test escaping  ***
   check(STR("{"), SV("{{"));
   check(STR("}"), SV("}}"));
@@ -2504,26 +2557,26 @@ void format_tests(TestFunction check, ExceptionTest check_exception) {
   check(STR("hello true false"), SV("hello {1:} {0:}"), false, true);
 
   // ** Test invalid format strings ***
-  check_exception("The format string terminates at a '{'", SV("{"));
-  check_exception("The replacement field misses a terminating '}'", SV("{:"), 42);
+  check_ill_formed("The format string terminates at a '{'", SV("{"));
+  check_ill_formed("The replacement field misses a terminating '}'", SV("{:"), 42);
+  check_ill_formed("The format string contains an invalid escape sequence", SV("}"));
+  check_ill_formed("The format string contains an invalid escape sequence", SV("{:}-}"), 42);
 
-  check_exception("The format string contains an invalid escape sequence", SV("}"));
-  check_exception("The format string contains an invalid escape sequence", SV("{:}-}"), 42);
+  check_ill_formed("The format string contains an invalid escape sequence", SV("} "));
 
-  check_exception("The format string contains an invalid escape sequence", SV("} "));
-
-  check_exception("The arg-id of the format-spec starts with an invalid character", SV("{-"), 42);
-  check_exception("Argument index out of bounds", SV("hello {}"));
-  check_exception("Argument index out of bounds", SV("hello {0}"));
-  check_exception("Argument index out of bounds", SV("hello {1}"), 42);
+  check_ill_formed("The arg-id of the format-spec starts with an invalid character", SV("{-"), 42);
+  check_ill_formed("Argument index out of bounds", SV("hello {}"));
+  check_ill_formed("Argument index out of bounds", SV("hello {0}"));
+  check_ill_formed("Argument index out of bounds", SV("hello {1}"), 42);
 
   // *** Test char format argument ***
   // The `char` to `wchar_t` formatting is tested separately.
   check(STR("hello 09azAZ!"), SV("hello {}{}{}{}{}{}{}"), CharT('0'), CharT('9'), CharT('a'), CharT('z'), CharT('A'),
         CharT('Z'), CharT('!'));
 
-  format_test_char<CharT>(check, check_exception);
-  format_test_char_as_integer<CharT>(check, check_exception);
+  CALL_CHECK_FUNCTION(format_test_char<CharT>);
+
+  CALL_CHECK_FUNCTION(format_test_char_as_integer<CharT>);
 
   // *** Test string format argument ***
   {
@@ -2545,8 +2598,8 @@ void format_tests(TestFunction check, ExceptionTest check_exception) {
     std::basic_string_view<CharT> data = buffer;
     check(STR("hello world"), SV("hello {}"), data);
   }
-  format_string_tests<CharT>(check, check_exception);
-
+//  CALL_CHECK_FUNCTION(format_string_tests<CharT>);
+#if 0
   // *** Test Boolean format argument ***
   check(STR("hello false true"), SV("hello {} {}"), false, true);
 
@@ -2560,7 +2613,7 @@ void format_tests(TestFunction check, ExceptionTest check_exception) {
   check(STR("hello 42"), SV("hello {}"), static_cast<int>(42));
   check(STR("hello 42"), SV("hello {}"), static_cast<long>(42));
   check(STR("hello 42"), SV("hello {}"), static_cast<long long>(42));
-#ifndef TEST_HAS_NO_INT128
+#  ifndef TEST_HAS_NO_INT128
   check(STR("hello 42"), SV("hello {}"), static_cast<__int128_t>(42));
   {
     // Note 128-bit support is only partly implemented test the range
@@ -2574,7 +2627,7 @@ void format_tests(TestFunction check, ExceptionTest check_exception) {
     check_exception("128-bit value is outside of implemented range", SV("{}"),
                     static_cast<__int128_t>(std::numeric_limits<long long>::max()) + 1);
   }
-#endif
+#  endif
   format_test_signed_integer<CharT>(check, check_exception);
 
   // ** Test unsigned integral format argument ***
@@ -2583,7 +2636,7 @@ void format_tests(TestFunction check, ExceptionTest check_exception) {
   check(STR("hello 42"), SV("hello {}"), static_cast<unsigned>(42));
   check(STR("hello 42"), SV("hello {}"), static_cast<unsigned long>(42));
   check(STR("hello 42"), SV("hello {}"), static_cast<unsigned long long>(42));
-#ifndef TEST_HAS_NO_INT128
+#  ifndef TEST_HAS_NO_INT128
   check(STR("hello 42"), SV("hello {}"), static_cast<__uint128_t>(42));
   {
     // Note 128-bit support is only partly implemented test the range
@@ -2593,7 +2646,7 @@ void format_tests(TestFunction check, ExceptionTest check_exception) {
     check_exception("128-bit value is outside of implemented range", SV("{}"),
                     static_cast<__uint128_t>(std::numeric_limits<unsigned long long>::max()) + 1);
   }
-#endif
+#  endif
   format_test_unsigned_integer<CharT>(check, check_exception);
 
   // *** Test floating point format argument ***
@@ -2607,17 +2660,26 @@ void format_tests(TestFunction check, ExceptionTest check_exception) {
   check(STR("hello 0x42"), SV("hello {}"), reinterpret_cast<void*>(0x42));
   check(STR("hello 0x42"), SV("hello {}"), reinterpret_cast<const void*>(0x42));
   format_test_pointer<CharT>(check, check_exception);
-
+#endif
   // *** Test handle formatter argument ***
-  format_test_handle<CharT>(check, check_exception);
+  CALL_CHECK_FUNCTION(format_test_handle<CharT>);
 }
 
 #ifndef TEST_HAS_NO_WIDE_CHARACTERS
+#  ifdef TEST_FORMAT_USE_COMPILE_TIME_CHECK
+void format_tests_char_to_wchar_t()
+#  else
 template <class TestFunction>
-void format_tests_char_to_wchar_t(TestFunction check) {
+void format_tests_char_to_wchar_t(TestFunction check)
+#  endif
+{
   using CharT = wchar_t;
   check(STR("hello 09azA"), SV("hello {}{}{}{}{}"), '0', '9', 'a', 'z', 'A');
 }
 #endif
+
+#undef CALL_CHECK_FUNCTION
+#undef CHECK_FUNCTION_ARGS
+#define CHECK_TEMPLATE_ARGS
 
 #endif

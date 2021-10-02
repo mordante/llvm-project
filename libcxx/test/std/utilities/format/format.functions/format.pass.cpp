@@ -30,54 +30,47 @@
 #include <vector>
 
 #include "test_macros.h"
+
+#ifdef _LIBCPP_VERSION
+#  define test_basic_format_string std::__basic_format_string
+#else
+#  error "Please add a define for your platform"
+#endif
+
+#define check(e, fmt, ...)                                                                                             \
+  {                                                                                                                    \
+    /* Force the proper type for expected. */                                                                          \
+    /* When using a check function its argument does the conversion, here do it explicitly. */                         \
+    std::basic_string<CharT> expected = e;                                                                             \
+    std::basic_string<CharT> out = std::format(fmt __VA_OPT__(, __VA_ARGS__));                                         \
+    assert(out == expected);                                                                                           \
+  }                                                                                                                    \
+  /* */
+
+#ifdef TEST_HAS_NO_EXCEPTIONS
+#  define check_exception(...)
+#else
+#  define check_exception(what, fmt, ...)                                                                              \
+    {                                                                                                                  \
+      try {                                                                                                            \
+        std::format(fmt, __VA_OPT__(, __VA_ARGS__));                                                                   \
+        assert(false);                                                                                                 \
+      } catch (std::format_error & e) {                                                                                \
+        LIBCPP_ASSERT(e.what() == what);                                                                               \
+        return;                                                                                                        \
+      }                                                                                                                \
+      assert(false);                                                                                                   \
+    }                                                                                                                  \
+    /* */
+#endif
+
+#define TEST_FORMAT_USE_COMPILE_TIME_CHECK 1
 #include "format_tests.h"
 
-auto test = []<class CharT, class... Args>(std::basic_string<CharT> expected, std::basic_string_view<CharT> fmt,
-                                           const Args&... args) {
-  std::basic_string<CharT> out = std::format(fmt, args...);
-#ifndef _LIBCPP_HAS_NO_LOCALIZATION
-  if constexpr (std::same_as<CharT, char>)
-    if (out != expected)
-      std::cerr << "\nFormat string   " << fmt << "\nExpected output " << expected << "\nActual output   " << out
-                << '\n';
-#endif
-  assert(out == expected);
-};
-
-auto test_exception =
-    []<class CharT, class... Args>(std::string_view what, std::basic_string_view<CharT> fmt, const Args&... args) {
-#ifndef TEST_HAS_NO_EXCEPTIONS
-  try {
-    std::format(fmt, args...);
-#  ifndef _LIBCPP_HAS_NO_LOCALIZATION
-    if constexpr (std::same_as<CharT, char>)
-      std::cerr << "\nFormat string   " << fmt << "\nDidn't throw an exception.\n";
-#  endif
-    assert(false);
-  } catch (std::format_error& e) {
-#  if defined(_LIBCPP_VERSION) && !defined(_LIBCPP_HAS_NO_LOCALIZATION)
-    if constexpr (std::same_as<CharT, char>)
-      if (e.what() != what)
-        std::cerr << "\nFormat string   " << fmt << "\nExpected exception " << what << "\nActual exception   "
-                  << e.what() << '\n';
-#  endif
-    LIBCPP_ASSERT(e.what() == what);
-    return;
-  }
-  assert(false);
-#endif
-  (void)what;
-  (void)fmt;
-  (void)sizeof...(args);
-};
-
 int main(int, char**) {
-  format_tests<char>(test, test_exception);
-
+  format_tests<char>();
 #ifndef TEST_HAS_NO_WIDE_CHARACTERS
-  format_tests_char_to_wchar_t(test);
-  format_tests<wchar_t>(test, test_exception);
+  format_tests_char_to_wchar_t();
+//  format_tests<wchar_t>();
 #endif
-
-  return 0;
 }

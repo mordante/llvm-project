@@ -256,7 +256,7 @@ public:
   /** Determines whether the value stored is a width or an arg-id. */
   uint32_t __width_as_arg : 1 {0};
 
-protected:
+  //protected:
   /**
    * Does the supplied std-format-spec contain a width field?
    *
@@ -331,7 +331,7 @@ public:
    */
   uint32_t __precision_as_arg : 1 {1};
 
-protected:
+  //protected:
   /**
    * Does the supplied std-format-spec contain a precision field?
    *

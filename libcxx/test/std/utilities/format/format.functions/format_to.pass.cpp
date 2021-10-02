@@ -29,61 +29,72 @@
 #include <vector>
 
 #include "test_macros.h"
+
+#ifdef _LIBCPP_VERSION
+#  define test_basic_format_string std::__basic_format_string
+#else
+#  error "Please add a define for your platform"
+#endif
+
+#define check(e, fmt, ...)                                                                                             \
+  {                                                                                                                    \
+    /* Force the proper type for expected. */                                                                          \
+    /* When using a check function its argument does the conversion, here do it explicitly. */                         \
+    std::basic_string<CharT> expected = e;                                                                             \
+    {                                                                                                                  \
+      std::basic_string<CharT> out(expected.size(), CharT(' '));                                                       \
+      auto it = std::format_to(out.begin(), fmt __VA_OPT__(, __VA_ARGS__));                                            \
+      assert(it == out.end());                                                                                         \
+      assert(out == expected);                                                                                         \
+    }                                                                                                                  \
+    {                                                                                                                  \
+      std::list<CharT> out;                                                                                            \
+      std::format_to(std::back_inserter(out), fmt __VA_OPT__(, __VA_ARGS__));                                          \
+      assert(std::equal(out.begin(), out.end(), expected.begin(), expected.end()));                                    \
+    }                                                                                                                  \
+    {                                                                                                                  \
+      std::vector<CharT> out;                                                                                          \
+      std::format_to(std::back_inserter(out), fmt __VA_OPT__(, __VA_ARGS__));                                          \
+      assert(std::equal(out.begin(), out.end(), expected.begin(), expected.end()));                                    \
+    }                                                                                                                  \
+    {                                                                                                                  \
+      assert(expected.size() < 4096 && "Update the size of the buffer.");                                              \
+      CharT out[4096];                                                                                                 \
+      CharT* it = std::format_to(out, fmt __VA_OPT__(, __VA_ARGS__));                                                  \
+      assert(std::distance(out, it) == int(expected.size()));                                                          \
+      /* Convert to std::string since output contains '\0' for boolean tests. */                                       \
+      assert(std::basic_string<CharT>(out, it) == expected);                                                           \
+    }                                                                                                                  \
+  }                                                                                                                    \
+  /* */
+
+#ifdef TEST_HAS_NO_EXCEPTIONS
+#  define check_exception(...)
+#else
+#  define check_exception(what, fmt, ...)                                                                              \
+    {                                                                                                                  \
+      try {                                                                                                            \
+        std::basic_string<CharT> out;                                                                                  \
+        std::format_to(std::back_inserter(out), fmt __VA_OPT__(, __VA_ARGS__));                                        \
+        assert(false);                                                                                                 \
+      } catch (std::format_error & e) {                                                                                \
+        LIBCPP_ASSERT(e.what() == what);                                                                               \
+        return;                                                                                                        \
+      }                                                                                                                \
+      assert(false);                                                                                                   \
+    }                                                                                                                  \
+    /* */
+#endif
+
+#define TEST_FORMAT_USE_COMPILE_TIME_CHECK 1
 #include "format_tests.h"
 
-auto test = []<class CharT, class... Args>(std::basic_string<CharT> expected, std::basic_string_view<CharT> fmt,
-                                           const Args&... args) {
-  {
-    std::basic_string<CharT> out(expected.size(), CharT(' '));
-    auto it = std::format_to(out.begin(), fmt, args...);
-    assert(it == out.end());
-    assert(out == expected);
-  }
-  {
-    std::list<CharT> out;
-    std::format_to(std::back_inserter(out), fmt, args...);
-    assert(std::equal(out.begin(), out.end(), expected.begin(), expected.end()));
-  }
-  {
-    std::vector<CharT> out;
-    std::format_to(std::back_inserter(out), fmt, args...);
-    assert(std::equal(out.begin(), out.end(), expected.begin(), expected.end()));
-  }
-  {
-    assert(expected.size() < 4096 && "Update the size of the buffer.");
-    CharT out[4096];
-    CharT* it = std::format_to(out, fmt, args...);
-    assert(std::distance(out, it) == int(expected.size()));
-    // Convert to std::string since output contains '\0' for boolean tests.
-    assert(std::basic_string<CharT>(out, it) == expected);
-  }
-};
-
-auto test_exception =
-    []<class CharT, class... Args>(std::string_view what, std::basic_string_view<CharT> fmt, const Args&... args) {
-#ifndef TEST_HAS_NO_EXCEPTIONS
-  try {
-    std::basic_string<CharT> out;
-    std::format_to(std::back_inserter(out), fmt, args...);
-    assert(false);
-  } catch (std::format_error& e) {
-    LIBCPP_ASSERT(e.what() == what);
-    return;
-  }
-  assert(false);
-#else
-  (void)what;
-  (void)fmt;
-  (void)sizeof...(args);
-#endif
-};
-
 int main(int, char**) {
-  format_tests<char>(test, test_exception);
+  format_tests<char>();
 
 #ifndef TEST_HAS_NO_WIDE_CHARACTERS
-  format_tests_char_to_wchar_t(test);
-  format_tests<wchar_t>(test, test_exception);
+  format_tests_char_to_wchar_t();
+  format_tests<wchar_t>();
 #endif
 
   return 0;
