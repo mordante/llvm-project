@@ -15,6 +15,8 @@
 #include <__format/format_fwd.h>
 #include <cstddef>
 
+#include <__format/format_arg_store.h>
+
 #if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
 #pragma GCC system_header
 #endif
@@ -46,18 +48,28 @@ public:
   template <class... _Args>
   _LIBCPP_HIDE_FROM_ABI basic_format_args(
       const __format_arg_store<_Context, _Args...>& __store) noexcept
-      : __size_(sizeof...(_Args)), __data_(__store.__args.data()) {}
+      : __size_(sizeof...(_Args)) {
+    if constexpr (sizeof...(_Args)) {
+      __meta_data_ = __store.__meta_data.data();
+      __data_ = static_cast<const char*>(__store.__data);
+    }
+  }
 
   _LIBCPP_HIDE_FROM_ABI
   basic_format_arg<_Context> get(size_t __id) const noexcept {
-    return __id < __size_ ? __data_[__id] : basic_format_arg<_Context>{};
+    if (__id >= __size_)
+      return basic_format_arg<_Context>{};
+
+    __format::__arg_meta_data __meta_data = __meta_data_[__id];
+    return basic_format_arg<_Context>{__meta_data.__type, __data_ + __meta_data.__offset};
   }
 
   _LIBCPP_HIDE_FROM_ABI size_t __size() const noexcept { return __size_; }
 
 private:
   size_t __size_{0};
-  const basic_format_arg<_Context>* __data_{nullptr};
+  const __format::__arg_meta_data* __meta_data_{nullptr};
+  const char* __data_{nullptr};
 };
 
 #endif // !defined(_LIBCPP_HAS_NO_CONCEPTS)

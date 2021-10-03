@@ -61,6 +61,10 @@ enum class _LIBCPP_ENUM_VIS __arg_t : uint8_t {
   __ptr,
   __handle
 };
+// The enum is packed in the format-arg-store as a 5 bit value.
+// Thus the maximum value of the enum is 31.
+// When adding a new value update the test
+// test/libcxx/utilities/format/format.arguments/format.arg/arg_t.compile.pass.cpp
 } // namespace __format
 
 template <class _Visitor, class _Context>
@@ -139,10 +143,8 @@ private:
   //    .format(declval<const T&>(), declval<Context&>())
   // shall be well-formed when treated as an unevaluated operand.
 
-  template <class _Ctx, class... _Args>
-  _LIBCPP_HIDE_FROM_ABI
-      _LIBCPP_AVAILABILITY_FORMAT friend __format_arg_store<_Ctx, _Args...>
-      _VSTD::make_format_args(const _Args&...);
+  template <class _Ctx>
+  friend class _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT basic_format_args;
 
   template <class _Visitor, class _Ctx>
   _LIBCPP_HIDE_FROM_ABI _LIBCPP_AVAILABILITY_FORMAT friend decltype(auto)
@@ -169,6 +171,70 @@ private:
   };
   __format::__arg_t __type_;
 
+  _LIBCPP_HIDE_FROM_ABI explicit basic_format_arg(__format::__arg_t __type, const char* __data) noexcept
+      : __type_(__type) {
+    switch (__type) {
+    case __format::__arg_t::__none:
+      _LIBCPP_UNREACHABLE();
+      return;
+    case __format::__arg_t::__boolean:
+      memcpy(_VSTD::addressof(__boolean), __data, sizeof(bool));
+      return;
+    case __format::__arg_t::__char_type:
+      memcpy(_VSTD::addressof(__char_type), __data, sizeof(char_type));
+      return;
+    case __format::__arg_t::__int:
+      memcpy(_VSTD::addressof(__int), __data, sizeof(int));
+      return;
+    case __format::__arg_t::__long_long:
+      memcpy(_VSTD::addressof(__long_long), __data, sizeof(long long));
+      return;
+    case __format::__arg_t::__i128:
+#    ifndef _LIBCPP_HAS_NO_INT128
+      memcpy(_VSTD::addressof(__i128), __data, sizeof(__int128_t));
+#    else
+      _LIBCPP_UNREACHABLE();
+#    endif
+      return;
+    case __format::__arg_t::__unsigned:
+      memcpy(_VSTD::addressof(__unsigned), __data, sizeof(unsigned));
+      return;
+    case __format::__arg_t::__unsigned_long_long:
+      memcpy(_VSTD::addressof(__long_long), __data, sizeof(unsigned long long));
+      return;
+    case __format::__arg_t::__u128:
+#    ifndef _LIBCPP_HAS_NO_INT128
+      memcpy(_VSTD::addressof(__u128), __data, sizeof(__uint128_t));
+#    else
+      _LIBCPP_UNREACHABLE();
+#    endif
+      return;
+    case __format::__arg_t::__float:
+      memcpy(_VSTD::addressof(__float), __data, sizeof(float));
+      return;
+    case __format::__arg_t::__double:
+      memcpy(_VSTD::addressof(__double), __data, sizeof(double));
+      return;
+    case __format::__arg_t::__long_double:
+      memcpy(_VSTD::addressof(__long_double), __data, sizeof(long double));
+      return;
+    case __format::__arg_t::__const_char_type_ptr:
+      memcpy(_VSTD::addressof(__const_char_type_ptr), __data, sizeof(const char_type*));
+      return;
+    case __format::__arg_t::__string_view:
+      memcpy(_VSTD::addressof(__string_view), __data, sizeof(basic_string_view<char_type>));
+      return;
+    case __format::__arg_t::__ptr:
+      memcpy(_VSTD::addressof(__ptr), __data, sizeof(const void*));
+      return;
+    case __format::__arg_t::__handle:
+      memcpy(_VSTD::addressof(__handle), __data, sizeof(handle));
+      return;
+    }
+    _LIBCPP_UNREACHABLE();
+  }
+
+  // TODO FMT Validate whether these exposition only constructors are still needed.
   _LIBCPP_HIDE_FROM_ABI explicit basic_format_arg(bool __v) noexcept
       : __boolean(__v), __type_(__format::__arg_t::__boolean) {}
 
@@ -268,6 +334,11 @@ public:
     __format_(__parse_ctx, __ctx, __ptr_);
   }
 
+  template <class _Tp>
+  _LIBCPP_HIDE_FROM_ABI static handle __create(const _Tp& __v) {
+    return handle{__v};
+  }
+
 private:
   const void* __ptr_;
   void (*__format_)(basic_format_parse_context<char_type>&, _Context&, const void*);
@@ -276,9 +347,12 @@ private:
   _LIBCPP_HIDE_FROM_ABI explicit handle(const _Tp& __v) noexcept
       : __ptr_(_VSTD::addressof(__v)),
         __format_([](basic_format_parse_context<char_type>& __parse_ctx, _Context& __ctx, const void* __ptr) {
-          typename _Context::template formatter_type<_Tp> __f;
+          using _Formatter = typename _Context::template formatter_type<_Tp>;
+          using _Qp = conditional_t < requires { _Formatter().format(declval<const _Tp&>(), declval<_Context&>()); }
+          , const _Tp, _Tp > ;
+          _Formatter __f;
           __parse_ctx.advance_to(__f.parse(__parse_ctx));
-          __ctx.advance_to(__f.format(*static_cast<const _Tp*>(__ptr), __ctx));
+          __ctx.advance_to(__f.format(*const_cast<_Qp*>(static_cast<const _Tp*>(__ptr)), __ctx));
         }) {}
 };
 
