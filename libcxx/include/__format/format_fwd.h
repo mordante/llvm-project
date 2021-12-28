@@ -11,6 +11,7 @@
 #define _LIBCPP___FORMAT_FORMAT_FWD_H
 
 #include <__availability>
+#include <__concepts/same_as.h>
 #include <__config>
 
 #if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
@@ -29,6 +30,14 @@ struct _LIBCPP_TEMPLATE_VIS __format_arg_store;
 
 template <class _Tp, class _CharT = char>
 struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT formatter;
+
+namespace __formatter {
+
+/** The character types that formatters are specialized for. */
+template <class _CharT>
+concept __char_type = same_as<_CharT, char> || same_as<_CharT, wchar_t>;
+
+} // namespace __formatter
 
 #endif //_LIBCPP_STD_VER > 17
 

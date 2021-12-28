@@ -553,9 +553,12 @@ module std [system] {
       module formatter_floating_point { private header "__format/formatter_floating_point.h" }
       module formatter_integer        { private header "__format/formatter_integer.h" }
       module formatter_integral       { private header "__format/formatter_integral.h" }
+      module formatter_output         { private header "__format/formatter_output.h" }
       module formatter_pointer        { private header "__format/formatter_pointer.h" }
       module formatter_string         { private header "__format/formatter_string.h" }
+      module formatter_v2             { private header "__format/formatter_v2.h" }
       module parser_std_format_spec   { private header "__format/parser_std_format_spec.h" }
+      module parser_std_format_spec_v2 { private header "__format/parser_std_format_spec_v2.h" }
     }
   }
   module forward_list {

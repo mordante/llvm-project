@@ -221,9 +221,12 @@ set(files
   __format/formatter_floating_point.h
   __format/formatter_integer.h
   __format/formatter_integral.h
+  __format/formatter_output.h
   __format/formatter_pointer.h
   __format/formatter_string.h
+  __format/formatter_v2.h
   __format/parser_std_format_spec.h
+  __format/parser_std_format_spec_v2.h
   __functional/binary_function.h
   __functional/binary_negate.h
   __functional/bind.h

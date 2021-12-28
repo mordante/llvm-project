@@ -2455,6 +2455,7 @@ void format_test_pointer(TestFunction check, ExceptionTest check_exception) {
 
 template <class CharT, class TestFunction, class ExceptionTest>
 void format_tests(TestFunction check, ExceptionTest check_exception) {
+
   // *** Test escaping  ***
 
   check.template operator()<"{{">(SV("{"));

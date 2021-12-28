@@ -10,7 +10,6 @@
 #ifndef _LIBCPP___FORMAT_FORMAT_ARG_H
 #define _LIBCPP___FORMAT_FORMAT_ARG_H
 
-#include <__assert>
 #include <__concepts/arithmetic.h>
 #include <__config>
 #include <__format/format_error.h>
@@ -84,7 +83,7 @@ visit_format_arg(_Visitor&& __vis, basic_format_arg<_Context> __arg) {
 #ifndef _LIBCPP_HAS_NO_INT128
     return _VSTD::invoke(_VSTD::forward<_Visitor>(__vis), __arg.__u128);
 #else
-   __libcpp_unreachable();
+    __libcpp_unreachable();
 #endif
   case __format::__arg_t::__float:
     return _VSTD::invoke(_VSTD::forward<_Visitor>(__vis), __arg.__float);

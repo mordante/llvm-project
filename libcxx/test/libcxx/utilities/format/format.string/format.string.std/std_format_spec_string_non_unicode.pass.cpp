@@ -26,8 +26,8 @@
 
 #include "test_macros.h"
 #include "make_string.h"
-
-#define CSTR(S) MAKE_CSTRING(CharT, S)
+#if 0
+#  define CSTR(S) MAKE_CSTRING(CharT, S)
 
 using namespace std::__format_spec;
 
@@ -90,16 +90,16 @@ constexpr void test() {
 
 constexpr bool test() {
   test<char>();
-#ifndef TEST_HAS_NO_WIDE_CHARACTERS
+#  ifndef TEST_HAS_NO_WIDE_CHARACTERS
   test<wchar_t>();
-#endif
-#ifndef _LIBCPP_HAS_NO_CHAR8_T
+#  endif
+#  ifndef _LIBCPP_HAS_NO_CHAR8_T
   test<char8_t>();
-#endif
-#ifndef TEST_HAS_NO_UNICODE_CHARS
+#  endif
+#  ifndef TEST_HAS_NO_UNICODE_CHARS
   test<char16_t>();
   test<char32_t>();
-#endif
+#  endif
   return true;
 }
 
@@ -109,3 +109,4 @@ int main(int, char**) {
 
   return 0;
 }
+#endif

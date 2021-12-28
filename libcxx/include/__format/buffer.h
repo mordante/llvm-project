@@ -14,7 +14,7 @@
 #include <__algorithm/unwrap_iter.h>
 #include <__config>
 #include <__format/enable_insertable.h>
-#include <__format/formatter.h> // for __char_type TODO FMT Move the concept?
+#include <__format/format_fwd.h> // for __char_type TODO FMT Move the concept?
 #include <__iterator/back_insert_iterator.h>
 #include <__iterator/concepts.h>
 #include <__iterator/iterator_traits.h>

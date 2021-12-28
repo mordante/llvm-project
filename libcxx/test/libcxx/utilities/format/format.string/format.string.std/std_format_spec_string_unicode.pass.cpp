@@ -27,7 +27,7 @@
 #define CSTR(S) MAKE_CSTRING(CharT, S)
 
 using namespace std::__format_spec;
-
+#if 0
 template <class CharT>
 constexpr bool operator==(const __string_alignment<CharT>& lhs,
                           const __string_alignment<CharT>& rhs) noexcept {
@@ -45,7 +45,7 @@ constexpr void get_string_alignment(size_t offset, ptrdiff_t size, bool align,
       __get_string_alignment(sv.begin(), sv.end(), width, precision);
   assert(traits == expected);
 }
-
+#endif
 template <class CharT>
 constexpr void estimate_column_width_fast(size_t expected, const CharT* str) {
   std::basic_string_view<CharT> sv{str};
@@ -166,7 +166,7 @@ constexpr void estimate_column_width() {
       2, CSTR("\U00030000")); // <CJK Ideograph Extension G, First>
   estimate_column_width(2, CSTR("\U0003fffd")); // Undefined Character
 }
-
+#if 0
 template <class CharT>
 constexpr void get_string_alignment() {
   // Truncate the input.
@@ -237,12 +237,13 @@ constexpr void get_string_alignment() {
   }
   // UTF-32 doesn't combine characters, thus no corruption tests.
 }
+#endif
 
 template <class CharT>
 constexpr void test() {
   estimate_column_width_fast<CharT>();
   estimate_column_width<CharT>();
-  get_string_alignment<CharT>();
+  //  get_string_alignment<CharT>();
 }
 
 constexpr bool test() {
