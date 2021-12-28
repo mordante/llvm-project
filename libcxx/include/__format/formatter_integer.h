@@ -20,7 +20,7 @@
 #include <limits>
 
 #if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
-#pragma GCC system_header
+#  pragma GCC system_header
 #endif
 
 _LIBCPP_PUSH_MACROS
@@ -34,8 +34,9 @@ _LIBCPP_BEGIN_NAMESPACE_STD
 // If the compiler has no concepts support, the format header will be disabled.
 // Without concepts support enable_if needs to be used and that too much effort
 // to support compilers with partial C++20 support.
-#if !defined(_LIBCPP_HAS_NO_CONCEPTS)
+#  if !defined(_LIBCPP_HAS_NO_CONCEPTS)
 
+#    if 0
 namespace __format_spec {
 
 template <class _CharT>
@@ -98,7 +99,7 @@ template <class _CharT>
 struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT
     formatter<long long, _CharT>
     : public __format_spec::__formatter_integer<_CharT> {};
-#ifndef _LIBCPP_HAS_NO_INT128
+#      ifndef _LIBCPP_HAS_NO_INT128
 template <class _CharT>
 struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT
     formatter<__int128_t, _CharT>
@@ -116,7 +117,7 @@ struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT
     return _Base::format(static_cast<_To>(__value), __ctx);
   }
 };
-#endif
+#      endif
 
 // Unsigned integral types.
 template <class _CharT>
@@ -139,7 +140,7 @@ template <class _CharT>
 struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT
     formatter<unsigned long long, _CharT>
     : public __format_spec::__formatter_integer<_CharT> {};
-#ifndef _LIBCPP_HAS_NO_INT128
+#      ifndef _LIBCPP_HAS_NO_INT128
 template <class _CharT>
 struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT
     formatter<__uint128_t, _CharT>
@@ -157,9 +158,111 @@ struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT
     return _Base::format(static_cast<_To>(__value), __ctx);
   }
 };
-#endif
+#      endif
+#    else
 
-#endif // !defined(_LIBCPP_HAS_NO_CONCEPTS)
+template </*integral _Tp,*/ class _CharT>
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT __formatter_integer {
+public:
+  _LIBCPP_HIDE_FROM_ABI constexpr auto parse(basic_format_parse_context<_CharT>& __parse_ctx)
+      -> decltype(__parse_ctx.begin()) {
+    auto __result = parser.parse(__parse_ctx, format_spec::__fields_integral);
+    format_spec::__process_parsed_integer(parser);
+    return __result;
+  }
+
+  // TODO might want to reduce the number of instantiations
+  // but need to measure the size of them (eg 64 bit and 128 bit version)
+  template <integral _Tp>
+  _LIBCPP_HIDE_FROM_ABI auto format(_Tp __value, auto& __ctx) -> decltype(__ctx.out()) const {
+    switch (parser.get_type()) {
+    case __format_spec::_Flags::_Type::__char:
+      return __format_char(__value, __ctx.out(), parser.resolve_dynamic_sizes(__ctx));
+
+    case __format_spec::_Flags::_Type::__binary_lower_case:
+    case __format_spec::_Flags::_Type::__binary_upper_case:
+    case __format_spec::_Flags::_Type::__octal:
+    case __format_spec::_Flags::_Type::__decimal:
+    case __format_spec::_Flags::_Type::__hexadecimal_lower_case:
+    case __format_spec::_Flags::_Type::__hexadecimal_upper_case:
+      return __format_integer(__value, __ctx, parser.resolve_dynamic_sizes(__ctx));
+
+    default:
+      _LIBCPP_ASSERT(false, "The parse function should have validated the type");
+      _LIBCPP_UNREACHABLE();
+    }
+  }
+
+  format_spec::parser<_CharT> parser;
+};
+
+// Signed integral types.
+template <class _CharT>
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT formatter<signed char, _CharT>
+    : public __formatter_integer<_CharT> {};
+template <class _CharT>
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT formatter<short, _CharT> : public __formatter_integer<_CharT> {
+};
+template <class _CharT>
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT formatter<int, _CharT> : public __formatter_integer<_CharT> {};
+template <class _CharT>
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT formatter<long, _CharT> : public __formatter_integer<_CharT> {};
+template <class _CharT>
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT formatter<long long, _CharT>
+    : public __formatter_integer<_CharT> {};
+#      ifndef _LIBCPP_HAS_NO_INT128
+template <class _CharT>
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT formatter<__int128_t, _CharT>
+    : public __formatter_integer<_CharT> {
+  using _Base = __formatter_integer<_CharT>;
+
+  _LIBCPP_HIDE_FROM_ABI auto format(__int128_t __value, auto& __ctx) -> decltype(__ctx.out()) {
+    // TODO FMT Implement full 128 bit support.
+    using _To = long long;
+    if (__value < numeric_limits<_To>::min() || __value > numeric_limits<_To>::max())
+      __throw_format_error("128-bit value is outside of implemented range");
+
+    return _Base::format(static_cast<_To>(__value), __ctx);
+  }
+};
+#      endif
+
+// Unsigned integral types.
+template <class _CharT>
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT formatter<unsigned char, _CharT>
+    : public __formatter_integer<_CharT> {};
+template <class _CharT>
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT formatter<unsigned short, _CharT>
+    : public __formatter_integer<_CharT> {};
+template <class _CharT>
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT formatter<unsigned, _CharT>
+    : public __formatter_integer<_CharT> {};
+template <class _CharT>
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT formatter<unsigned long, _CharT>
+    : public __formatter_integer<_CharT> {};
+template <class _CharT>
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT formatter<unsigned long long, _CharT>
+    : public __formatter_integer<_CharT> {};
+#      ifndef _LIBCPP_HAS_NO_INT128
+template <class _CharT>
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT formatter<__uint128_t, _CharT>
+    : public __formatter_integer<_CharT> {
+  using _Base = __formatter_integer<_CharT>;
+
+  _LIBCPP_HIDE_FROM_ABI auto format(__uint128_t __value, auto& __ctx) -> decltype(__ctx.out()) {
+    // TODO FMT Implement full 128 bit support.
+    using _To = unsigned long long;
+    if (__value < numeric_limits<_To>::min() || __value > numeric_limits<_To>::max())
+      __throw_format_error("128-bit value is outside of implemented range");
+
+    return _Base::format(static_cast<_To>(__value), __ctx);
+  }
+};
+#      endif
+
+#    endif
+
+#  endif // !defined(_LIBCPP_HAS_NO_CONCEPTS)
 
 #endif //_LIBCPP_STD_VER > 17
 

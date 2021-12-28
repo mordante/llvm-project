@@ -172,6 +172,7 @@ set(files
   __format/formatter_integral.h
   __format/formatter_string.h
   __format/parser_std_format_spec.h
+  __format/parser_std_format_spec_v2.h
   __function_like.h
   __functional_base
   __functional/binary_function.h

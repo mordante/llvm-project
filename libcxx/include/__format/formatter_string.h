@@ -16,10 +16,11 @@
 #include <__format/format_string.h>
 #include <__format/formatter.h>
 #include <__format/parser_std_format_spec.h>
+#include <__format/parser_std_format_spec_v2.h>
 #include <string_view>
 
 #if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
-#pragma GCC system_header
+#  pragma GCC system_header
 #endif
 
 _LIBCPP_PUSH_MACROS
@@ -33,7 +34,8 @@ _LIBCPP_BEGIN_NAMESPACE_STD
 // If the compiler has no concepts support, the format header will be disabled.
 // Without concepts support enable_if needs to be used and that too much effort
 // to support compilers with partial C++20 support.
-#if !defined(_LIBCPP_HAS_NO_CONCEPTS)
+#  if !defined(_LIBCPP_HAS_NO_CONCEPTS)
+#    if 0
 
 namespace __format_spec {
 
@@ -150,8 +152,117 @@ struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT formatter<basic_string_v
     return _Base::format(basic_string_view<_CharT>(__str.data(), __str.size()), __ctx);
   }
 };
+#    else
 
-#endif // !defined(_LIBCPP_HAS_NO_CONCEPTS)
+namespace __formatter {
+
+template <class _CharT, class _Fill>
+_LIBCPP_HIDE_FROM_ABI auto __write_unicode(basic_string_view<_CharT> __str,
+                                           output_iterator<const _CharT&> auto __out_it,
+                                           format_spec::parser<_Fill> __parser) {
+  return __write_unicode(_VSTD::move(__out_it), __str, __parser.__width,
+                         __parser.has_precision() ? __parser.__precision : -1, __parser.__fill, __parser.__alignment);
+}
+} // namespace __formatter
+
+template <class _CharT>
+struct _LIBCPP_TEMPLATE_VIS __formatter_string {
+public:
+  _LIBCPP_HIDE_FROM_ABI constexpr auto parse(basic_format_parse_context<_CharT>& __parse_ctx)
+      -> decltype(__parse_ctx.begin()) {
+    auto __result = parser.parse(__parse_ctx, format_spec::__fields_string);
+    format_spec::__validate_display_type_string(parser.__type);
+    return __result;
+  }
+
+  _LIBCPP_HIDE_FROM_ABI auto format(basic_string_view<_CharT> __str, auto& __ctx) -> decltype(__ctx.out()) const {
+    return __formatter::__write_unicode(__str, __ctx.out(), parser.resolve_dynamic_sizes(__ctx));
+  }
+
+  format_spec::parser<_CharT> parser;
+};
+
+// Formatter const char*.
+template <class _CharT>
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT formatter<const _CharT*, _CharT>
+    : public __formatter_string<_CharT> {
+  using _Base = __formatter_string<_CharT>;
+
+  _LIBCPP_HIDE_FROM_ABI auto format(const _CharT* __str, auto& __ctx) -> decltype(__ctx.out()) {
+    _LIBCPP_ASSERT(__str, "The basic_format_arg constructor should have "
+                          "prevented an invalid pointer.");
+
+    // When using a center or right alignment and the width option the length
+    // of __str must be known to add the padding upfront. This case is handled
+    // by the base class by converting the argument to a basic_string_view.
+    //
+    // When using left alignment and the width option the padding is added
+    // after outputting __str so the length can be determined while outputting
+    // __str. The same holds true for the precision, during outputting __str it
+    // can be validated whether the precision threshold has been reached. For
+    // now these optimizations aren't implemented. Instead the base class
+    // handles these options.
+    // TODO FMT Implement these improvements.
+    if (_Base::parser.has_width() || _Base::parser.has_precision())
+      return _Base::format(basic_string_view<_CharT>(__str), __ctx);
+
+    // No formatting required, copy the string to the output.
+    auto __out_it = __ctx.out();
+    while (*__str)
+      *__out_it++ = *__str++;
+    return __out_it;
+  }
+};
+
+// Formatter char*.
+template <class _CharT>
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT formatter<_CharT*, _CharT>
+    : public formatter<const _CharT*, _CharT> {
+  using _Base = formatter<const _CharT*, _CharT>;
+
+  _LIBCPP_HIDE_FROM_ABI auto format(_CharT* __str, auto& __ctx) -> decltype(__ctx.out()) {
+    return _Base::format(__str, __ctx);
+  }
+};
+
+// Formatter const char[].
+template <class _CharT, size_t _Size>
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT formatter<const _CharT[_Size], _CharT>
+    : public __formatter_string<_CharT> {
+  using _Base = __formatter_string<_CharT>;
+
+  _LIBCPP_HIDE_FROM_ABI auto format(const _CharT __str[_Size], auto& __ctx) -> decltype(__ctx.out()) {
+    return _Base::format(basic_string_view<_CharT>(__str, _Size), __ctx);
+  }
+};
+
+// Formatter std::string.
+template <class _CharT, class _Traits, class _Allocator>
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT formatter<basic_string<_CharT, _Traits, _Allocator>, _CharT>
+    : public __formatter_string<_CharT> {
+  using _Base = __formatter_string<_CharT>;
+
+  _LIBCPP_HIDE_FROM_ABI auto format(const basic_string<_CharT, _Traits, _Allocator>& __str, auto& __ctx)
+      -> decltype(__ctx.out()) {
+    // drop _Traits and _Allocator
+    return _Base::format(basic_string_view<_CharT>(__str.data(), __str.size()), __ctx);
+  }
+};
+
+// Formatter std::string_view.
+template <class _CharT, class _Traits>
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_AVAILABILITY_FORMAT formatter<basic_string_view<_CharT, _Traits>, _CharT>
+    : public __formatter_string<_CharT> {
+  using _Base = __formatter_string<_CharT>;
+
+  _LIBCPP_HIDE_FROM_ABI auto format(basic_string_view<_CharT, _Traits> __str, auto& __ctx) -> decltype(__ctx.out()) {
+    // drop _Traits
+    return _Base::format(basic_string_view<_CharT>(__str.data(), __str.size()), __ctx);
+  }
+};
+
+#    endif
+#  endif // !defined(_LIBCPP_HAS_NO_CONCEPTS)
 
 #endif //_LIBCPP_STD_VER > 17
 
