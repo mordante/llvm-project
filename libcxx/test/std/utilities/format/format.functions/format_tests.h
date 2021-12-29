@@ -10,6 +10,11 @@
 
 #include <format>
 
+#include <algorithm>
+#include <charconv>
+#include <cmath>
+#include <cstdint>
+
 #include "make_string.h"
 
 // In this file the following template types are used:
@@ -36,6 +41,93 @@ struct context<wchar_t> {
 
 template <class T>
 using context_t = typename context<T>::type;
+
+// A user-defined type used to test the handle formatter.
+enum class status : uint16_t { foo = 0xAAAA, bar = 0x5555, foobar = 0xAA55 };
+
+// The formatter for a user-defined type used to test the handle formatter.
+template <class CharT>
+struct std::formatter<status, CharT> {
+  int type = 0;
+
+  constexpr auto parse(auto& parse_ctx) -> decltype(parse_ctx.begin()) {
+    auto begin = parse_ctx.begin();
+    auto end = parse_ctx.end();
+    if (begin == end)
+      return begin;
+
+    switch (*begin) {
+    case CharT('x'):
+      break;
+    case CharT('X'):
+      type = 1;
+      break;
+    case CharT('s'):
+      type = 2;
+      break;
+    case CharT('}'):
+      return begin;
+    default:
+      throw_format_error("The format-spec type has a type not supported for a status argument");
+    }
+
+    ++begin;
+    if (begin != end && *begin != CharT('}'))
+      throw_format_error("The format-spec should consume the input or end with a '}'");
+
+    return begin;
+  }
+
+  auto format(status s, auto& ctx) -> decltype(ctx.out()) {
+    const char* names[] = {"foo", "bar", "foobar"};
+    char buffer[6];
+    const char* begin;
+    const char* end;
+    switch (type) {
+    case 0:
+      begin = buffer;
+      buffer[0] = '0';
+      buffer[1] = 'x';
+      end = std::to_chars(&buffer[2], std::end(buffer), static_cast<uint16_t>(s), 16).ptr;
+      break;
+
+    case 1:
+      begin = buffer;
+      buffer[0] = '0';
+      buffer[1] = 'X';
+      end = std::to_chars(&buffer[2], std::end(buffer), static_cast<uint16_t>(s), 16).ptr;
+      std::transform(static_cast<const char*>(&buffer[2]), end, &buffer[2], [](char c) { return std::toupper(c); });
+      break;
+
+    case 2:
+      switch (s) {
+      case status::foo:
+        begin = names[0];
+        break;
+      case status::bar:
+        begin = names[1];
+        break;
+      case status::foobar:
+        begin = names[2];
+        break;
+      }
+      end = begin + strlen(begin);
+      break;
+    }
+
+    return std::copy(begin, end, ctx.out());
+  }
+
+private:
+  void throw_format_error(const char* s) {
+#ifndef _LIBCPP_NO_EXCEPTIONS
+    throw std::format_error(s);
+#else
+    (void)s;
+    std::abort();
+#endif
+  }
+};
 
 template <class CharT>
 std::vector<std::basic_string<CharT>> invalid_types(std::string valid) {
@@ -990,6 +1082,29 @@ void format_test_char_as_integer(TestFunction check,
 }
 
 template <class CharT, class TestFunction, class ExceptionTest>
+void format_test_handle(TestFunction check, ExceptionTest check_exception) {
+  // *** Valid permuatations ***
+  check(STR("answer is '0xaaaa'"), STR("answer is '{}'"), status::foo);
+  check(STR("answer is '0xaaaa'"), STR("answer is '{:x}'"), status::foo);
+  check(STR("answer is '0XAAAA'"), STR("answer is '{:X}'"), status::foo);
+  check(STR("answer is 'foo'"), STR("answer is '{:s}'"), status::foo);
+
+  check(STR("answer is '0x5555'"), STR("answer is '{}'"), status::bar);
+  check(STR("answer is '0x5555'"), STR("answer is '{:x}'"), status::bar);
+  check(STR("answer is '0X5555'"), STR("answer is '{:X}'"), status::bar);
+  check(STR("answer is 'bar'"), STR("answer is '{:s}'"), status::bar);
+
+  check(STR("answer is '0xaa55'"), STR("answer is '{}'"), status::foobar);
+  check(STR("answer is '0xaa55'"), STR("answer is '{:x}'"), status::foobar);
+  check(STR("answer is '0XAA55'"), STR("answer is '{:X}'"), status::foobar);
+  check(STR("answer is 'foobar'"), STR("answer is '{:s}'"), status::foobar);
+
+  // *** type ***
+  for (const auto& fmt : invalid_types<CharT>("xXs"))
+    check_exception("The format-spec type has a type not supported for a status argument", fmt, status::foo);
+}
+
+template <class CharT, class TestFunction, class ExceptionTest>
 void format_tests(TestFunction check, ExceptionTest check_exception) {
   // *** Test escaping  ***
   check(STR("{"), STR("{{"));
@@ -1118,6 +1233,9 @@ void format_tests(TestFunction check, ExceptionTest check_exception) {
   check(STR("hello 42.000000"), STR("hello {}"), static_cast<double>(42));
   check(STR("hello 42.000000"), STR("hello {}"), static_cast<long double>(42));
 #endif
+
+  // *** Test handle formatter argument ***
+  format_test_handle<CharT>(check, check_exception);
 }
 
 #ifndef TEST_HAS_NO_WIDE_CHARACTERS
