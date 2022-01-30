@@ -491,6 +491,7 @@ module std [system] {
     export *
 
     module __format {
+      module concepts                 { private header "__format/concepts.h" }
       module format_arg               { private header "__format/format_arg.h" }
       module format_args              { private header "__format/format_args.h" }
       module format_context {
