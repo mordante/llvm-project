@@ -112,6 +112,18 @@ void assert_formatter_is_enabled() {
     assert_formatter_is_disabled<T, CharT>();
 }
 
+// The chrono formatters require localization support.
+// When this isn't available the formatter specialization isn't available
+// and the formatter is disabled.
+template <class T, class CharT>
+void assert_formatter_is_enabled_with_localization_support() {
+#ifndef TEST_HAS_NO_LOCALIZATION
+  assert_formatter_is_enabled<T, CharT>();
+#else
+  assert_formatter_is_disabled<T, CharT>();
+#endif
+}
+
 // Tests for P0645 Text Formatting
 template <class CharT>
 void test_P0645() {
@@ -163,20 +175,20 @@ void test_P0645() {
 // enabled.
 template <class CharT>
 void test_P1361() {
-  assert_formatter_is_disabled<std::chrono::microseconds, CharT>();
+  assert_formatter_is_enabled_with_localization_support<std::chrono::microseconds, CharT>();
 
-  assert_formatter_is_disabled<std::chrono::sys_time<std::chrono::microseconds>, CharT>();
+  assert_formatter_is_enabled_with_localization_support<std::chrono::sys_time<std::chrono::microseconds>, CharT>();
   //assert_formatter_is_enabled<std::chrono::utc_time<std::chrono::microseconds>, CharT>();
   //assert_formatter_is_enabled<std::chrono::tai_time<std::chrono::microseconds>, CharT>();
   //assert_formatter_is_enabled<std::chrono::gps_time<std::chrono::microseconds>, CharT>();
   assert_formatter_is_disabled<std::chrono::file_time<std::chrono::microseconds>, CharT>();
   assert_formatter_is_disabled<std::chrono::local_time<std::chrono::microseconds>, CharT>();
 
-  assert_formatter_is_disabled<std::chrono::day, CharT>();
+  assert_formatter_is_enabled_with_localization_support<std::chrono::day, CharT>();
   assert_formatter_is_disabled<std::chrono::month, CharT>();
   assert_formatter_is_disabled<std::chrono::year, CharT>();
 
-  assert_formatter_is_disabled<std::chrono::weekday, CharT>();
+  assert_formatter_is_enabled_with_localization_support<std::chrono::weekday, CharT>();
   assert_formatter_is_disabled<std::chrono::weekday_indexed, CharT>();
   assert_formatter_is_disabled<std::chrono::weekday_last, CharT>();
 

@@ -133,12 +133,15 @@ set(files
   __chrono/day.h
   __chrono/duration.h
   __chrono/file_clock.h
+  # TODO FMT move the formatter to the proper headers
+  __chrono/formatter.h
   __chrono/hh_mm_ss.h
   __chrono/high_resolution_clock.h
   __chrono/literals.h
   __chrono/month.h
   __chrono/month_weekday.h
   __chrono/monthday.h
+  __chrono/parser_std_format_spec.h
   __chrono/steady_clock.h
   __chrono/system_clock.h
   __chrono/time_point.h

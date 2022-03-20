@@ -402,12 +402,14 @@ module std [system] {
       module day                   { private header "__chrono/day.h" }
       module duration              { private header "__chrono/duration.h" }
       module file_clock            { private header "__chrono/file_clock.h" }
+      module formatter              { private header "__chrono/formatter.h" }
       module hh_mm_ss              { private header "__chrono/hh_mm_ss.h" }
       module high_resolution_clock { private header "__chrono/high_resolution_clock.h" }
       module literals              { private header "__chrono/literals.h" }
       module month                 { private header "__chrono/month.h" }
       module month_weekday         { private header "__chrono/month_weekday.h" }
       module monthday              { private header "__chrono/monthday.h" }
+      module parser_std_format_spec { private header "__chrono/parser_std_format_spec.h" }
       module steady_clock          { private header "__chrono/steady_clock.h" }
       module system_clock          { private header "__chrono/system_clock.h" }
       module time_point            { private header "__chrono/time_point.h" }
