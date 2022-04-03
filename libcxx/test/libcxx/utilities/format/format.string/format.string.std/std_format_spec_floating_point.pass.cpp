@@ -283,7 +283,11 @@ constexpr void test() {
     test_exception<Parser<CharT>>(not_a_type, CSTR("M}"));
     test_exception<Parser<CharT>>(not_a_type, CSTR("N}"));
     test_exception<Parser<CharT>>(not_a_type, CSTR("O}"));
+#if TEST_STD_VER > 20
+    test_exception<Parser<CharT>>(unsuported_type, CSTR("P}"));
+#else
     test_exception<Parser<CharT>>(not_a_type, CSTR("P}"));
+#endif
     test_exception<Parser<CharT>>(not_a_type, CSTR("Q}"));
     test_exception<Parser<CharT>>(not_a_type, CSTR("R}"));
     test_exception<Parser<CharT>>(not_a_type, CSTR("S}"));

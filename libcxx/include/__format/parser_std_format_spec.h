@@ -90,7 +90,8 @@ public:
     __decimal,
     __hexadecimal_lower_case,
     __hexadecimal_upper_case,
-    __pointer,
+    __pointer_lower_case,
+    __pointer_upper_case,
     __char,
     __float_hexadecimal_lower_case,
     __float_hexadecimal_upper_case,
@@ -457,8 +458,13 @@ __parse_type(const _CharT* __begin, _Flags& __flags) {
     __flags.__type = _Flags::_Type::__octal;
     break;
   case 'p':
-    __flags.__type = _Flags::_Type::__pointer;
+    __flags.__type = _Flags::_Type::__pointer_lower_case;
     break;
+#  if _LIBCPP_STD_VER > 20
+  case 'P':
+    __flags.__type = _Flags::_Type::__pointer_upper_case;
+    break;
+#  endif
   case 's':
     __flags.__type = _Flags::_Type::__string;
     break;
@@ -843,7 +849,9 @@ public:
     // still experimental.
     //
     // TODO FMT Validate this with the final resolution of LWG3612.
+#  if _LIBCPP_STD_VER <= 20
     this->__alignment = _Flags::_Alignment::__right;
+#  endif
   }
 
   /**
@@ -899,6 +907,12 @@ protected:
     // "integer presentation type".
     // TODO FMT Apply the LWG-issues/papers after approval/rejection by the Committee.
 
+#  if _LIBCPP_STD_VER > 20
+    __begin = __parse_zero_padding(__begin, static_cast<_Flags&>(*this));
+    if (__begin == __end)
+      return __begin;
+#  endif
+
     __begin = __parser_width::__parse(__begin, __end, __parse_ctx);
     if (__begin == __end)
       return __begin;
@@ -915,9 +929,13 @@ protected:
   _LIBCPP_HIDE_FROM_ABI constexpr void __process_display_type() {
     switch (this->__type) {
     case _Flags::_Type::__default:
-      this->__type = _Flags::_Type::__pointer;
-      break;
-    case _Flags::_Type::__pointer:
+      this->__type = _Flags::_Type::__pointer_lower_case;
+      [[fallthrough]];
+    case _Flags::_Type::__pointer_lower_case:
+#  if _LIBCPP_STD_VER > 20
+    case _Flags::_Type::__pointer_upper_case:
+      __process_arithmetic_alignment(static_cast<_Flags&>(*this));
+#  endif
       break;
     default:
       __throw_format_error("The format-spec type has a type not supported for a pointer argument");

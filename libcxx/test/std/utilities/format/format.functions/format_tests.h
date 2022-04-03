@@ -2401,6 +2401,13 @@ void format_test_pointer(TestFunction check, ExceptionTest check_exception) {
   check.template operator()<"answer is '{:-<6}'">(SV("answer is '0x0---'"), P(nullptr));
   check.template operator()<"answer is '{:-^6}'">(SV("answer is '-0x0--'"), P(nullptr));
 
+#if TEST_STD_VER > 20
+  // Test whether zero padding is ignored
+  check.template operator()<"answer is '{:*>06}'">(SV("answer is '***0x0'"), P(nullptr));
+  check.template operator()<"answer is '{:*<06}'">(SV("answer is '0x0***'"), P(nullptr));
+  check.template operator()<"answer is '{:*^06}'">(SV("answer is '*0x0**'"), P(nullptr));
+#endif
+
   // *** Sign ***
   check_exception("The format-spec should consume the input or end with a '}'", SV("{:-}"), P(nullptr));
   check_exception("The format-spec should consume the input or end with a '}'", SV("{:+}"), P(nullptr));
@@ -2410,7 +2417,13 @@ void format_test_pointer(TestFunction check, ExceptionTest check_exception) {
   check_exception("The format-spec should consume the input or end with a '}'", SV("{:#}"), P(nullptr));
 
   // *** zero-padding ***
+#if TEST_STD_VER > 20
+  check.template operator()<"answer is '{:06}'">(SV("answer is '0x0000'"), P(nullptr));
+  check.template operator()<"answer is '{:06p}'">(SV("answer is '0x0000'"), P(nullptr));
+  check.template operator()<"answer is '{:06P}'">(SV("answer is '0X0000'"), P(nullptr));
+#else
   check_exception("A format-spec width field shouldn't have a leading zero", SV("{:0}"), P(nullptr));
+#endif
 
   // *** precision ***
   check_exception("The format-spec should consume the input or end with a '}'", SV("{:.}"), P(nullptr));
@@ -2419,7 +2432,17 @@ void format_test_pointer(TestFunction check, ExceptionTest check_exception) {
   check_exception("The format-spec should consume the input or end with a '}'", SV("{:L}"), P(nullptr));
 
   // *** type ***
-  for (const auto& fmt : invalid_types<CharT>("p"))
+  if constexpr (!std::same_as<P, std::nullptr_t>) {
+    check.template operator()<"answer is '{}'">(SV("answer is '0x12345678'"), P(0x12345678));
+    check.template operator()<"answer is '{}'">(SV("answer is '0x90abcdef'"), P(0x90abcdef));
+    check.template operator()<"answer is '{:p}'">(SV("answer is '0x12345678'"), P(0x12345678));
+    check.template operator()<"answer is '{:p}'">(SV("answer is '0x90abcdef'"), P(0x90abcdef));
+#if TEST_STD_VER > 20
+    check.template operator()<"answer is '{:012P}'">(SV("answer is '0X0012345678'"), P(0x12345678));
+    check.template operator()<"answer is '{:012P}'">(SV("answer is '0X0090ABCDEF'"), P(0x90abcdef));
+#endif
+  }
+  for (const auto& fmt : invalid_types<CharT>("pP"))
     check_exception("The format-spec type has a type not supported for a pointer argument", fmt, P(nullptr));
 }
 
@@ -2451,6 +2474,15 @@ void format_test_pointer(TestFunction check, ExceptionTest check_exception) {
   format_test_pointer<std::nullptr_t, CharT>(check, check_exception);
   format_test_pointer<void*, CharT>(check, check_exception);
   format_test_pointer<const void*, CharT>(check, check_exception);
+
+  // P2510
+#if TEST_STD_VER > 20
+  check.template operator()<"{:018}">(SV("0x00007ffe0325c4e4"), (void*)(0x7ffe0325c4e4));
+  check.template operator()<"{:P}">(SV("0X7FFE0325C4E4"), (void*)(0x7ffe0325c4e4));
+
+  check_exception("The format-spec should consume the input or end with a '}'", SV("{:-}"), (void*)(0x7ffe0325c4e4));
+  check_exception("The format-spec should consume the input or end with a '}'", SV("{:#}"), (void*)(0x7ffe0325c4e4));
+#endif
 }
 
 template <class CharT, class TestFunction, class ExceptionTest>

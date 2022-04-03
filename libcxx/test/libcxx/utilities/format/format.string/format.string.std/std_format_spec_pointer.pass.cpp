@@ -41,7 +41,7 @@ struct Expected {
   uint32_t width = 0;
   bool width_as_arg = false;
   bool locale_specific_form = false;
-  _Flags::_Type type = _Flags::_Type::__pointer;
+  _Flags::_Type type = _Flags::_Type::__pointer_lower_case;
 };
 
 template <class CharT>
@@ -88,7 +88,11 @@ constexpr void test() {
   Parser<CharT> parser;
 
   assert(parser.__fill == CharT(' '));
+#if TEST_STD_VER > 20
+  assert(parser.__alignment == _Flags::_Alignment::__default);
+#else
   assert(parser.__alignment == _Flags::_Alignment::__right);
+#endif
   assert(parser.__sign == _Flags::_Sign::__default);
   assert(parser.__alternate_form == false);
   assert(parser.__zero_padding == false);
@@ -120,7 +124,19 @@ constexpr void test() {
   test_exception<Parser<CharT>>("The format-spec should consume the input or end with a '}'", CSTR("#"));
 
   // *** Zero padding ***
+#if TEST_STD_VER > 20
+  test({.alignment = _Flags::_Alignment::__default, .zero_padding = true}, 1, CSTR("0}"));
+  test({.alignment = _Flags::_Alignment::__left, .zero_padding = false}, 2, CSTR("<0}"));
+  test({.alignment = _Flags::_Alignment::__center, .zero_padding = false}, 2, CSTR("^0}"));
+  test({.alignment = _Flags::_Alignment::__right, .zero_padding = false}, 2, CSTR(">0}"));
+
+  test({.alignment = _Flags::_Alignment::__default, .zero_padding = true}, 2, CSTR("0p}"));
+  test({.alignment = _Flags::_Alignment::__left, .zero_padding = false}, 3, CSTR("<0p}"));
+  test({.alignment = _Flags::_Alignment::__center, .zero_padding = false}, 3, CSTR("^0p}"));
+  test({.alignment = _Flags::_Alignment::__right, .zero_padding = false}, 3, CSTR(">0p}"));
+#else
   test_exception<Parser<CharT>>("A format-spec width field shouldn't have a leading zero", CSTR("0"));
+#endif
 
   // *** Width ***
   test({.width = 0, .width_as_arg = false}, 0, CSTR("}"));
@@ -183,7 +199,11 @@ constexpr void test() {
     test_exception<Parser<CharT>>(not_a_type, CSTR("M}"));
     test_exception<Parser<CharT>>(not_a_type, CSTR("N}"));
     test_exception<Parser<CharT>>(not_a_type, CSTR("O}"));
+#if TEST_STD_VER > 20
+    test({.type = _Flags::_Type::__pointer_upper_case}, 1, CSTR("P}"));
+#else
     test_exception<Parser<CharT>>(not_a_type, CSTR("P}"));
+#endif
     test_exception<Parser<CharT>>(not_a_type, CSTR("Q}"));
     test_exception<Parser<CharT>>(not_a_type, CSTR("R}"));
     test_exception<Parser<CharT>>(not_a_type, CSTR("S}"));
@@ -210,7 +230,7 @@ constexpr void test() {
     test_exception<Parser<CharT>>(not_a_type, CSTR("m}"));
     test_exception<Parser<CharT>>(not_a_type, CSTR("n}"));
     test_exception<Parser<CharT>>(unsuported_type, CSTR("o}"));
-    test({.type = _Flags::_Type::__pointer}, 1, CSTR("p}"));
+    test({.type = _Flags::_Type::__pointer_lower_case}, 1, CSTR("p}"));
     test_exception<Parser<CharT>>(not_a_type, CSTR("q}"));
     test_exception<Parser<CharT>>(not_a_type, CSTR("r}"));
     test_exception<Parser<CharT>>(unsuported_type, CSTR("s}"));
