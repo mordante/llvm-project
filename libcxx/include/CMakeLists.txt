@@ -270,6 +270,7 @@ set(files
   __chrono/formatter.h
   __chrono/hh_mm_ss.h
   __chrono/high_resolution_clock.h
+  __chrono/leap_second.h
   __chrono/literals.h
   __chrono/month.h
   __chrono/month_weekday.h
@@ -280,6 +281,11 @@ set(files
   __chrono/steady_clock.h
   __chrono/system_clock.h
   __chrono/time_point.h
+  __chrono/time_zone.h
+  __chrono/time_zone_link.h
+  __chrono/time_zone_rule.h
+  __chrono/tzdb.h
+  __chrono/tzdb_list.h
   __chrono/weekday.h
   __chrono/year.h
   __chrono/year_month.h

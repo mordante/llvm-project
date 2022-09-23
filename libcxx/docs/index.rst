@@ -192,6 +192,7 @@ Design Documents
    DesignDocs/UniquePtrTrivialAbi
    DesignDocs/UnspecifiedBehaviorRandomization
    DesignDocs/VisibilityMacros
+   DesignDocs/TimeZone
 
 
 Build Bots and Test Coverage

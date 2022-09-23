@@ -322,6 +322,7 @@ endif()
 add_custom_target(cxx DEPENDS ${LIBCXX_BUILD_TARGETS})
 
 set(LIBCXX_EXPERIMENTAL_SOURCES
+  chrono_tzdb.cpp
   experimental/memory_resource.cpp
   )
 

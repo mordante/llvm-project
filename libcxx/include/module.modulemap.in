@@ -765,6 +765,7 @@ module std [system] {
         export system_clock
         export time_point
       }
+      module leap_second            { private header "__chrono/leap_second.h" }
       module literals               { private header "__chrono/literals.h" }
       module month                  { private header "__chrono/month.h" }
       module month_weekday          { private header "__chrono/month_weekday.h" }
@@ -781,6 +782,19 @@ module std [system] {
       module steady_clock           { private header "__chrono/steady_clock.h" }
       module system_clock           { private header "__chrono/system_clock.h" }
       module time_point             { private header "__chrono/time_point.h" }
+      module time_zone              { private header "__chrono/time_zone.h" }
+      module time_zone_link         { private header "__chrono/time_zone_link.h" }
+      module time_zone_rule {
+        private header "__chrono/time_zone_rule.h"
+        export optional // TODO TZDB remove
+      }
+      module tzdb {
+        private header "__chrono/tzdb.h"
+        export span
+        export string
+        export vector
+      }
+      module tzdb_list              { private header "__chrono/tzdb_list.h" }
       module weekday                { private header "__chrono/weekday.h" }
       module year                   { private header "__chrono/year.h" }
       module year_month             { private header "__chrono/year_month.h" }
