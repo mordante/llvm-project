@@ -17,6 +17,7 @@
 #if !defined(_LIBCPP_HAS_NO_INCOMPLETE_TZDB)
 
 #  include <__availability>
+#  include <__chrono/leap_second.h>
 #  include <__chrono/time_zone.h>
 #  include <__chrono/time_zone_link.h>
 #  include <__chrono/time_zone_types.h>
@@ -39,6 +40,8 @@ struct _LIBCPP_AVAILABILITY_TZDB tzdb {
   vector<pair<string, vector<__tz::__rule>>> __rules;
   vector<time_zone> zones;
   vector<time_zone_link> links;
+
+  vector<leap_second> leap_seconds;
 };
 
 } // namespace chrono

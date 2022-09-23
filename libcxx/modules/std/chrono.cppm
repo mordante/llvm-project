@@ -227,10 +227,10 @@ export namespace std {
     using std::chrono::zoned_time;
 
     using std::chrono::zoned_seconds;
+#endif
 
     // [time.zone.leap], leap second support
     using std::chrono::leap_second;
-#endif
 
     // [time.zone.link], class time_zone_link
     using std::chrono::time_zone_link;
