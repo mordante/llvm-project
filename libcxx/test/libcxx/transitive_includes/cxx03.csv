@@ -112,7 +112,6 @@ charconv iosfwd
 charconv limits
 charconv type_traits
 chrono bit
-chrono cerrno
 chrono compare
 chrono concepts
 chrono cstddef
@@ -129,6 +128,8 @@ chrono string
 chrono string_view
 chrono tuple
 chrono type_traits
+chrono variant
+chrono vector
 chrono version
 cinttypes cstdint
 cmath type_traits

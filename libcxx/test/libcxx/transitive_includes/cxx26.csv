@@ -66,7 +66,6 @@ charconv cstdint
 charconv initializer_list
 charconv limits
 chrono array
-chrono cerrno
 chrono cmath
 chrono compare
 chrono cstddef
@@ -76,7 +75,6 @@ chrono ctime
 chrono forward_list
 chrono limits
 chrono locale
-chrono new
 chrono optional
 chrono ostream
 chrono ratio
@@ -86,6 +84,8 @@ chrono stdexcept
 chrono string
 chrono string_view
 chrono tuple
+chrono variant
+chrono vector
 chrono version
 cinttypes cstdint
 cmath version

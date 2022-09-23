@@ -782,9 +782,13 @@ module std [system] {
         export time_point
       }
       module time_point             { private header "__chrono/time_point.h" }
+      module time_zone              { private header "__chrono/time_zone.h" }
+      module time_zone_link         { private header "__chrono/time_zone_link.h" }
+      module time_zone_types         { private header "__chrono/time_zone_types.h" }
       module tzdb {
         private header "__chrono/tzdb.h"
         export string
+        export vector
       }
       module tzdb_list {
         private header "__chrono/tzdb_list.h"

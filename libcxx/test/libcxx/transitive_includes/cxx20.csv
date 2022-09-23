@@ -112,7 +112,6 @@ charconv limits
 charconv type_traits
 chrono array
 chrono bit
-chrono cerrno
 chrono charconv
 chrono cmath
 chrono compare
@@ -135,6 +134,8 @@ chrono string
 chrono string_view
 chrono tuple
 chrono type_traits
+chrono variant
+chrono vector
 chrono version
 cinttypes cstdint
 cmath type_traits
