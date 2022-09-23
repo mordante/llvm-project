@@ -782,6 +782,14 @@ module std [system] {
         export time_point
       }
       module time_point             { private header "__chrono/time_point.h" }
+      module tzdb {
+        private header "__chrono/tzdb.h"
+        export string
+      }
+      module tzdb_list {
+        private header "__chrono/tzdb_list.h"
+        export forward_list
+      }
       module weekday                { private header "__chrono/weekday.h" }
       module year                   { private header "__chrono/year.h" }
       module year_month             { private header "__chrono/year_month.h" }

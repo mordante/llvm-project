@@ -112,6 +112,7 @@ charconv iosfwd
 charconv limits
 charconv type_traits
 chrono bit
+chrono cerrno
 chrono compare
 chrono concepts
 chrono cstddef
@@ -119,9 +120,12 @@ chrono cstdint
 chrono cstdlib
 chrono cstring
 chrono ctime
+chrono forward_list
 chrono limits
 chrono ratio
+chrono shared_mutex
 chrono stdexcept
+chrono string
 chrono string_view
 chrono tuple
 chrono type_traits

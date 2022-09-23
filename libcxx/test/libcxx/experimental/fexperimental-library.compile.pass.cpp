@@ -26,3 +26,7 @@
 #ifdef _LIBCPP_HAS_NO_INCOMPLETE_PSTL
 #  error "-fexperimental-library should enable the PSTL"
 #endif
+
+#ifdef _LIBCPP_HAS_NO_INCOMPLETE_TZDB
+#  error "-fexperimental-library should enable the chrono TZDB"
+#endif

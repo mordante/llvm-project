@@ -51,6 +51,15 @@ Paper Status
    .. [#note-P2231] P2231: Optional is complete. The changes to variant haven't been implemented yet.
    .. [#note-P0408] P0408: Only `view()` members implemented.
    .. [#note-P0660] P0660: Section 32.3 Stop Tokens is complete. ``jthread`` hasn't been implemented yet.
+   .. [#note-P0355] P0355: The implementation status is:
+
+      * ``Calendars`` mostely done in Clang 7
+      * ``Input parsers`` not done
+      * ``Stream output`` Obsolete due to `P1361R2 <https://wg21.link/P1361R2>`_ "Integration of chrono with text formatting"
+      * ``Time zone and leap seconds`` In Progress
+      * ``TAI clock`` not done
+      * ``GPS clock`` not done
+      * ``UTC clock`` not done
 
 .. _issues-status-cxx20:
 

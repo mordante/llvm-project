@@ -112,6 +112,7 @@ charconv limits
 charconv type_traits
 chrono array
 chrono bit
+chrono cerrno
 chrono charconv
 chrono cmath
 chrono compare
@@ -121,11 +122,13 @@ chrono cstdint
 chrono cstdlib
 chrono cstring
 chrono ctime
+chrono forward_list
 chrono limits
 chrono locale
 chrono optional
 chrono ostream
 chrono ratio
+chrono shared_mutex
 chrono sstream
 chrono stdexcept
 chrono string

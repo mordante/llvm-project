@@ -537,6 +537,76 @@ versions. This allows the library to have better estimates for newly introduced
 Unicode code points, without requiring the user to use the latest C++ version
 in their code base.
 
+Extensions to ``<chrono>``
+--------------------------
+
+Configuring the Time Zone Database location
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``chrono`` library offers a way to change the path where the
+`IANA <https://www.iana.org/time-zones>`__ Time Zone Database is stored.
+By default the path is the system or vendor provided path.
+There are a several use cases where changing the default can be useful:
+
+- The system or vendor does not provide a database. Please contact your
+  vendor to provide support.
+- Your application needs more control over the database version used.
+  The ``chrono`` library has the function ``std::chrono::reload_tzdb``
+  to update the database, but it provides no Standard way to specify how
+  a new database is provided.
+- Testing libc++ with a known version of the database.
+
+In order to change the path you need to use link-time customization of
+the path lookup function, similarly to how replacing operator new works.
+Link-time customization is done by simply defining the following
+function in exactly one translation unit of your program:
+
+.. code-block:: cpp
+
+   std::string_view std::chrono::__libcpp_tzdb_directory();
+
+
+This mechanism is similar to how one can replace the default definition
+of operator new and operator delete. For example:
+
+.. code-block:: cpp
+
+   // In HelloWorldHandler.cpp
+   #include <chrono>
+
+   std::string_view std::chrono::__libcpp_tzdb_directory() {
+     static std::string_view result = "C:/usr/share/zoneinfo";
+     return result;
+   }
+
+   // In HelloWorld.cpp
+   #include <chrono>
+
+   int main() {
+     return std::chrono::remote_version() == "my_database";
+   }
+
+
+.. warning::
+   The path used must contain a database with the
+   :ref:`required files <TimeZoneDatabase>`.
+
+
+Updating the Time Zone Database
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Standard allows implementations to automatically update the
+*remote time zone database*. Libc++ opts not to do that. Instead calling
+
+- ``std::chrono::remote_version()`` will update the verson information of the
+  *remote time zone database*,
+- ``std::chrono::reload_tzdb()``, if needed, will update the the entire
+  *remote time zone database*.
+
+This offers a method users to update the *remote time zone database*, and
+giving them full control over the process.
+
+
 Turning off ASan annotation in containers
 -----------------------------------------
 
