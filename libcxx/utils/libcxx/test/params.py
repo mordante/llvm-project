@@ -67,6 +67,21 @@ def getStdFlag(cfg, std):
     return '-std='+fallbacks[std]
   return None
 
+_allModules = ['none', 'clang', 'std', 'std.compat']
+def getModuleFlag(cfg, enable_modules):
+  # Originaly the flag was a Boolean, this maps the original Boolean values
+  # to the new enumerate values.
+  fallbacks = {
+    'none': 'False',
+    'clang': 'True',
+  }
+  if enable_modules in _allModules:
+    return enable_modules
+  if enable_modules in fallbacks:
+    return fallbacks[enable_modules]
+  return None
+
+
 DEFAULT_PARAMETERS = [
   Parameter(name='target_triple', type=str,
             help="The target triple to compile the test suite for. This must be "
@@ -86,13 +101,30 @@ DEFAULT_PARAMETERS = [
               AddCompileFlag(lambda cfg: getStdFlag(cfg, std)),
             ]),
 
-  Parameter(name='enable_modules', choices=[True, False], type=bool, default=False,
-            help="Whether to build the test suite with Clang modules enabled.",
-            actions=lambda modules: [
+  Parameter(name='enable_modules', choices=_allModules + ['True', 'False'], type=str,
+            help="Whether to build the test suite with modules enabled. Select "
+                 "Clang for Clang modules and c++ for C++ Standard modules",
+            default=lambda cfg: next(s for s in _allModules if getModuleFlag(cfg, s)),
+            actions=lambda enable_modules: [
               AddFeature('modules-build'),
               AddCompileFlag('-fmodules'),
               AddCompileFlag('-fcxx-modules'), # AppleClang disregards -fmodules entirely when compiling C++. This enables modules for C++.
-            ] if modules else []),
+            ] if enable_modules == "clang" or enable_modules == "True" else [
+              AddFeature('use_module_std'),
+              AddCompileFlag('-DTEST_USE_MODULE'),
+              AddCompileFlag('-DTEST_USE_MODULE_STD'),
+              AddCompileFlag(lambda cfg: '-fprebuilt-module-path=' + os.path.join(cfg.test_exec_root, '__config_module__/CMakeFiles/std.dir')),
+              AddLinkFlag(lambda cfg: os.path.join(cfg.test_exec_root, '__config_module__/libstd.a')),
+              AddModule(),
+            ] if enable_modules == "std" else [
+              AddFeature('use_module_std.compat'),
+              AddCompileFlag('-DTEST_USE_MODULE'),
+              AddCompileFlag("-DTEST_USE_MODULE_STD_COMPAT"),
+              AddCompileFlag(lambda cfg: '-fprebuilt-module-path=' + os.path.join(cfg.test_exec_root, '__config_module__/CMakeFiles/std.compat.dir')),
+              AddLinkFlag(lambda cfg: os.path.join(cfg.test_exec_root, '__config_module__/libstd.compat.a')),
+              AddLinkFlag(lambda cfg: os.path.join(cfg.test_exec_root, '__config_module__/libstd.a')),
+              AddModule(),
+            ] if enable_modules == "std.compat" else []),
 
   Parameter(name='enable_modules_lsv', choices=[True, False], type=bool, default=False,
           help="Whether to enable Local Submodule Visibility in the Modules build.",

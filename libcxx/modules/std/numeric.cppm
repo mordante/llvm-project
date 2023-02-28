@@ -1,0 +1,61 @@
+# 1 __FILE__ 1 3
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+
+module;
+#include <numeric>
+
+export module std:numeric;
+export namespace std {
+
+  // [accumulate], accumulate
+  using std::accumulate;
+
+  // [reduce], reduce
+  using std::reduce;
+
+  // [inner.product], inner product
+  using std::inner_product;
+
+  // [transform.reduce], transform reduce
+  using std::transform_reduce;
+
+  // [partial.sum], partial sum
+  using std::partial_sum;
+
+  // [exclusive.scan], exclusive scan
+  using std::exclusive_scan;
+
+  // [inclusive.scan], inclusive scan
+  using std::inclusive_scan;
+
+  // [transform.exclusive.scan], transform exclusive scan
+  using std::transform_exclusive_scan;
+
+  // [adjacent.difference], adjacent difference
+  using std::adjacent_difference;
+
+  // [numeric.iota], iota
+  using std::iota;
+
+  namespace ranges {
+    // using std::ranges::iota_result; NOT YET IMPLEMENTED
+    // using std::ranges::iota;  NOT YET IMPLEMENTED
+  } // namespace ranges
+
+  // [numeric.ops.gcd], greatest common divisor
+  using std::gcd;
+
+  // [numeric.ops.lcm], least common multiple
+  using std::lcm;
+
+  // [numeric.ops.midpoint], midpoint
+  using std::midpoint;
+
+} // namespace std

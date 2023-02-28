@@ -18,6 +18,7 @@
 #include <set>
 #include <string>
 #include <string_view>
+#include <iostream>
 
 #define STR(S) MAKE_STRING(CharT, S)
 #define SV(S) MAKE_STRING_VIEW(CharT, S)

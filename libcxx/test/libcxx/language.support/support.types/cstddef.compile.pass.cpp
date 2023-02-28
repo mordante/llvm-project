@@ -10,7 +10,15 @@
 // This is a conforming extension to be consistent with other implementations, which all
 // appear to provide that behavior too.
 
-#include <cstddef>
+// XFAIL: use_module_std
+
+#if defined(TEST_USE_MODULE_STD)
+import std;
+#elif defined(TEST_USE_MODULE_STD_COMPAT)
+import std.compat;
+#else
+#  include <cstddef>
+#endif
 #include "test_macros.h"
 
 using PtrdiffT = ::ptrdiff_t;
@@ -19,8 +27,10 @@ using SizeT = ::size_t;
 using MaxAlignT = ::max_align_t;
 #endif
 
+#ifndef TEST_USE_MODULE
 // Supported in C++03 mode too for backwards compatibility with previous versions of libc++
 using NullptrT = ::nullptr_t;
+#endif
 
 // Also ensure that we provide std::nullptr_t in C++03 mode, which is an extension too.
 using StdNullptrT = std::nullptr_t;

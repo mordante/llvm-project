@@ -378,6 +378,24 @@ generic-with_llvm_unwinder)
     generate-cmake -DLIBCXXABI_USE_LLVM_UNWINDER=ON
     check-runtimes
 ;;
+generic-module-std)
+    clean
+    export CC=/usr/lib/llvm-17/bin/clang
+    export CXX=/usr/lib/llvm-17/bin/clang++
+    export CMAKE=/opt/bin/cmake
+    echo "Manually selected CMake 3.26 instead of the system version"
+    generate-cmake -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-module-std.cmake"
+    check-runtimes
+;;
+generic-module-std-compat)
+    clean
+    export CC=/usr/lib/llvm-17/bin/clang
+    export CXX=/usr/lib/llvm-17/bin/clang++
+    export CMAKE=/opt/bin/cmake
+    echo "Manually selected CMake 3.26 instead of the system version"
+    generate-cmake -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-module-std-compat.cmake"
+    check-runtimes
+;;
 generic-modules)
     clean
     generate-cmake -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-modules.cmake"
@@ -439,6 +457,99 @@ generic-noexceptions)
     generate-cmake -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-noexceptions.cmake"
     check-runtimes
     check-abi-list
+;;
+#
+# Parts removed using the std.compat module
+#
+generic-module-std-compat-no-threads)
+    clean
+    export CC=/usr/lib/llvm-17/bin/clang
+    export CXX=/usr/lib/llvm-17/bin/clang++
+    export CMAKE=/opt/bin/cmake
+    echo "Manually selected CMake 3.26 instead of the system version"
+    generate-cmake -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-module-std-compat.cmake" \
+                   -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-no-threads.cmake"
+    check-runtimes
+;;
+generic-module-std-compat-no-filesystem)
+    clean
+    export CC=/usr/lib/llvm-17/bin/clang
+    export CXX=/usr/lib/llvm-17/bin/clang++
+    export CMAKE=/opt/bin/cmake
+    echo "Manually selected CMake 3.26 instead of the system version"
+    generate-cmake -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-module-std-compat.cmake" \
+                   -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-no-filesystem.cmake"
+    check-runtimes
+;;
+generic-module-std-compat-no-random_device)
+    clean
+    export CC=/usr/lib/llvm-17/bin/clang
+    export CXX=/usr/lib/llvm-17/bin/clang++
+    export CMAKE=/opt/bin/cmake
+    echo "Manually selected CMake 3.26 instead of the system version"
+    generate-cmake -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-module-std-compat.cmake" \
+                   -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-no-random_device.cmake"
+    check-runtimes
+;;
+generic-module-std-compat-no-fstream)
+    clean
+    export CC=/usr/lib/llvm-17/bin/clang
+    export CXX=/usr/lib/llvm-17/bin/clang++
+    export CMAKE=/opt/bin/cmake
+    echo "Manually selected CMake 3.26 instead of the system version"
+    generate-cmake -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-module-std-compat.cmake" \
+                   -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-no-fstream.cmake"
+    check-runtimes
+;;
+generic-module-std-compat-no-localization)
+    clean
+    export CC=/usr/lib/llvm-17/bin/clang
+    export CXX=/usr/lib/llvm-17/bin/clang++
+    export CMAKE=/opt/bin/cmake
+    echo "Manually selected CMake 3.26 instead of the system version"
+    generate-cmake -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-module-std-compat.cmake" \
+                   -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-no-localization.cmake"
+    check-runtimes
+;;
+generic-module-std-compat-no-unicode)
+    clean
+    export CC=/usr/lib/llvm-17/bin/clang
+    export CXX=/usr/lib/llvm-17/bin/clang++
+    export CMAKE=/opt/bin/cmake
+    echo "Manually selected CMake 3.26 instead of the system version"
+    generate-cmake -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-module-std-compat.cmake" \
+                   -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-no-unicode.cmake"
+    check-runtimes
+;;
+generic-module-std-compat-no-wide-characters)
+    clean
+    export CC=/usr/lib/llvm-17/bin/clang
+    export CXX=/usr/lib/llvm-17/bin/clang++
+    export CMAKE=/opt/bin/cmake
+    echo "Manually selected CMake 3.26 instead of the system version"
+    generate-cmake -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-module-std-compat.cmake" \
+                   -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-no-wide-characters.cmake"
+    check-runtimes
+;;
+generic-module-std-compat-no-experimental)
+    clean
+    export CC=/usr/lib/llvm-17/bin/clang
+    export CXX=/usr/lib/llvm-17/bin/clang++
+    export CMAKE=/opt/bin/cmake
+    echo "Manually selected CMake 3.26 instead of the system version"
+    generate-cmake -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-module-std-compat.cmake" \
+                   -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-no-experimental.cmake"
+    check-runtimes
+;;
+generic-module-std-compat-noexceptions)
+    clean
+    export CC=/usr/lib/llvm-17/bin/clang
+    export CXX=/usr/lib/llvm-17/bin/clang++
+    export CMAKE=/opt/bin/cmake
+    echo "Manually selected CMake 3.26 instead of the system version"
+    generate-cmake -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-module-std-compat.cmake" \
+                   -C "${MONOREPO_ROOT}/libcxx/cmake/caches/Generic-noexceptions.cmake"
+    check-runtimes
 ;;
 #
 # Other miscellaneous jobs

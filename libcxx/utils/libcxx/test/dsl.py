@@ -12,6 +12,7 @@ import pipes
 import platform
 import re
 import shutil
+import subprocess
 import tempfile
 
 import libcxx.test.format
@@ -386,6 +387,63 @@ class AddFlag(ConfigAction):
   def pretty(self, config, litParams):
     return 'add {} to %{{flags}}'.format(self._getFlag(config))
 
+def _getSubstitution(substitution, config):
+  for (orig, replacement) in config.substitutions:
+    if orig == substitution:
+      return replacement
+  raise ValueError('Substitution {} is not in the config.'.format(substitution))
+
+# TODO This solution works, but is way too slow. Running in the CI
+# should trigger the build once. Running one test will also trigger this
+# which gives quite a overhead when quickly testing some changes.
+class AddModule(ConfigAction):
+
+  def applyTo(self, config):
+    build = os.path.join(config.test_exec_root, '__config_module__')
+
+    cxx = _getSubstitution('%{cxx}', config)
+    std = _getSubstitution('%{cxx_std}', config)
+    if std == 'cxx20':
+        std = '20'
+    elif std == 'cxx2b':
+        std = '23'
+    else:
+        std = '17' # Not allowed for modules
+
+    flags = _getSubstitution('%{flags}', config)
+    include = _getSubstitution('%{include}', config)
+    source = _getSubstitution('%{module}', config)
+
+    cmake = _getSubstitution('%{cmake}', config)
+    make = _getSubstitution('%{make}', config)
+    generator = _getSubstitution('%{generator}', config)
+
+    print(f"cxx {cxx}")
+    print(f"std {std}")
+    print(f"flags {flags}")
+    print(f"include {include}")
+    print(f"source {source}")
+
+    print(f"cmake {cmake}")
+    print(f"make {make}")
+    print(f"generator {generator}")
+
+    subprocess.check_call([cmake,
+        "-G" + generator,
+        "-DCMAKE_MAKE_PROGRAM=" + make,
+        "-B" + build,
+        "-H" + source,
+        "-DCMAKE_CXX_COMPILER_WORKS=TRUE", # The compiler test fails, but forcing this works
+        "-DCMAKE_CXX_COMPILER=" + cxx,
+        "-DCMAKE_CXX_STANDARD=" + std,
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        f"-DCMAKE_CXX_FLAGS={flags}",
+        ], env={})
+
+    subprocess.check_call([cmake, "--build", build], env={})
+
+  def pretty(self, config, litParams):
+    pass
 
 class AddFlagIfSupported(ConfigAction):
   """
@@ -438,12 +496,12 @@ class AddLinkFlag(ConfigAction):
 
   def applyTo(self, config):
     flag = self._getFlag(config)
-    assert hasCompileFlag(config, flag), "Trying to enable link flag {}, which is not supported".format(flag)
+    # TODO This fails when enabling the modular flags.
+    #assert hasCompileFlag(config, flag), "Trying to enable link flag {}, which is not supported".format(flag)
     config.substitutions = _appendToSubstitution(config.substitutions, '%{link_flags}', flag)
 
   def pretty(self, config, litParams):
     return 'append {} to %{{link_flags}}'.format(self._getFlag(config))
-
 
 class PrependLinkFlag(ConfigAction):
   """

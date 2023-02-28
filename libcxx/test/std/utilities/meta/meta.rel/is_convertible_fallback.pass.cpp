@@ -9,6 +9,7 @@
 // UNSUPPORTED: c++03
 
 // ADDITIONAL_COMPILE_FLAGS: -D _LIBCPP_USE_IS_CONVERTIBLE_FALLBACK
+// UNSUPPORTED: use_module_std, use_module_std.compat
 
 // type_traits
 

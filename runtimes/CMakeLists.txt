@@ -144,6 +144,13 @@ llvm_check_compiler_linker_flag(CXX "-nostdlib++" CXX_SUPPORTS_NOSTDLIBXX_FLAG)
 if (CXX_SUPPORTS_NOSTDLIBXX_FLAG)
   set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -nostdlib++")
 endif()
+# When present, the -nostdinc++ flag gets propagated to the linker flags. In
+# CMake 3.26 this causes try_compile to fail for other compile options. Which
+# results in flags not being set, even when present.
+check_c_compiler_flag("-Wno-unused-command-line-argument" C_SUPPORTS_START_NO_UNUSED_COMMAND_LINE_ARGUMENTS)
+if (C_SUPPORTS_START_NO_UNUSED_COMMAND_LINE_ARGUMENTS)
+  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Wno-unused-command-line-argument")
+endif()
 check_cxx_compiler_flag(-nostdinc++ CXX_SUPPORTS_NOSTDINCXX_FLAG)
 if (CXX_SUPPORTS_NOSTDINCXX_FLAG)
   set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -nostdinc++")
