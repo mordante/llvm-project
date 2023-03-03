@@ -96,9 +96,10 @@ _LIBCPP_HIDE_FROM_ABI char* __to_buffer(char* __first, char* __last, _Tp __value
 // __max_fractional
 // exponent character      1 code unit
 // sign                    1 code unit
+// imaginary character     1 code unit
 // __max_fractional_value
 // -----------------------------------
-// total                   4 code units extra required.
+// total                   5 code units extra required.
 //
 // TODO FMT Optimize the storage to avoid storing digits that are known to be zero.
 // https://www.exploringbinary.com/maximum-number-of-decimal-digits-in-binary-floating-point-numbers/
@@ -110,7 +111,7 @@ struct __traits;
 template <floating_point _Fp>
 _LIBCPP_HIDE_FROM_ABI constexpr size_t __float_buffer_size(int __precision) {
   using _Traits = __traits<_Fp>;
-  return 4 + _Traits::__max_integral + __precision + _Traits::__max_fractional_value;
+  return 5 + _Traits::__max_integral + __precision + _Traits::__max_fractional_value;
 }
 
 template <>
@@ -518,10 +519,9 @@ _LIBCPP_HIDE_FROM_ABI _OutIt __format_locale_specific_form(
   }
 
   ptrdiff_t __size =
-      __result.__last - __buffer.begin() + // Formatted string
-      __buffer.__num_trailing_zeros() +    // Not yet rendered zeros
-      __grouping.size() -                  // Grouping contains one
-      !__grouping.empty();                 // additional character
+      __result.__last - __buffer.begin() +     // Formatted string
+      __buffer.__num_trailing_zeros() +        // Not yet rendered zeros
+      __grouping.size() - !__grouping.empty(); // Grouping contains one additional character
 
   __formatter::__padding_size_result __padding    = {0, 0};
   bool __zero_padding                             = __specs.__alignment_ == __format_spec::__alignment::__zero_padding;
@@ -585,7 +585,7 @@ _LIBCPP_HIDE_FROM_ABI _OutIt __format_locale_specific_form(
 template <class _OutIt, class _CharT>
 _LIBCPP_HIDE_FROM_ABI _OutIt __format_floating_point_non_finite(
     _OutIt __out_it, __format_spec::__parsed_specifications<_CharT> __specs, bool __negative, bool __isnan) {
-  char __buffer[4];
+  char __buffer[6];
   char* __last = __formatter::__insert_sign(__buffer, __negative, __specs.__std_.__sign_);
 
   // to_chars can return inf, infinity, nan, and nan(n-char-sequence).
@@ -604,6 +604,10 @@ _LIBCPP_HIDE_FROM_ABI _OutIt __format_floating_point_non_finite(
   // width, except when applied to an infinity or NaN.
   if (__specs.__alignment_ == __format_spec::__alignment::__zero_padding)
     __specs.__alignment_ = __format_spec::__alignment::__right;
+
+  // For readability the imaginary number has a space before the i.
+  if (__specs.__std_.__imaginary_value_)
+    __last = _VSTD::copy_n(" i", 2, __last);
 
   return __formatter::__write(__buffer, __last, _VSTD::move(__out_it), __specs);
 }
@@ -680,6 +684,14 @@ __format_floating_point(_Tp __value, _FormatContext& __ctx, __format_spec::__par
     }
   }
 
+  if (__specs.__std_.__imaginary_value_) {
+    // Pre-adjust the radix point when it's not present.
+    __result.__radix_point += __result.__radix_point == __result.__last;
+    // The imaginary number is treated as part of the exponent, Just adding
+    // it will work even when exponent == last since the last is updated.
+    *__result.__last++ = 'i';
+  }
+
 #  ifndef _LIBCPP_HAS_NO_LOCALIZATION
   if (__specs.__std_.__locale_specific_form_)
     return __formatter::__format_locale_specific_form(__ctx.out(), __buffer, __result, __ctx.locale(), __specs);
@@ -736,7 +748,13 @@ public:
 
   template <floating_point _Tp, class _FormatContext>
   _LIBCPP_HIDE_FROM_ABI typename _FormatContext::iterator format(_Tp __value, _FormatContext& __ctx) const {
-    return __formatter::__format_floating_point(__value, __ctx, __parser_.__get_parsed_std_specifications(__ctx));
+    return __format(__value, __ctx, __parser_.__get_parsed_std_specifications(__ctx));
+  }
+
+  template <floating_point _Tp, class _FormatContext>
+  _LIBCPP_HIDE_FROM_ABI typename _FormatContext::iterator
+  __format(_Tp __value, _FormatContext& __ctx, __format_spec::__parsed_specifications<_CharT> __specs) const {
+    return __formatter::__format_floating_point(__value, __ctx, __specs);
   }
 
   __format_spec::__parser<_CharT> __parser_;

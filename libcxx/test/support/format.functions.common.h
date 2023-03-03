@@ -209,6 +209,9 @@ constexpr std::string_view get_format_types() {
 #if TEST_STD_VER > 20
          "?"
 #endif
+#if TEST_STD_VER > 23
+         "rS"
+#endif
       ;
 }
 

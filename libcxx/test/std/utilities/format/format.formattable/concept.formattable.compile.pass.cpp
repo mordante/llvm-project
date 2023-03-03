@@ -180,7 +180,6 @@ template <class CharT>
 void test_P1636() {
   assert_is_not_formattable<std::basic_streambuf<CharT>, CharT>();
   assert_is_not_formattable<std::bitset<42>, CharT>();
-  assert_is_not_formattable<std::complex<double>, CharT>();
   assert_is_not_formattable<std::error_code, CharT>();
 #ifndef TEST_HAS_NO_FILESYSTEM_LIBRARY
   assert_is_not_formattable<std::filesystem::path, CharT>();
@@ -241,6 +240,16 @@ void test_P2286() {
   test_P2286_vector_bool<CharT, std::vector<bool>>();
   test_P2286_vector_bool<CharT, std::vector<bool, std::allocator<bool>>>();
   test_P2286_vector_bool<CharT, std::vector<bool, min_allocator<bool>>>();
+}
+
+// Tests for PXXXX Formatter specializations
+template <class CharT>
+void test_PXXXX() {
+#if TEST_STD_VER > 23
+  assert_is_formattable<std::complex<float>, CharT>();
+  assert_is_formattable<std::complex<double>, CharT>();
+  assert_is_formattable<std::complex<long double>, CharT>();
+#endif // TEST_STD_VER > 23
 }
 
 class c {
@@ -341,6 +350,7 @@ void test() {
   test_P1361<CharT>();
   test_P1636<CharT>();
   test_P2286<CharT>();
+  test_PXXXX<CharT>();
   test_disabled<CharT>();
 }
 

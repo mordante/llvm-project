@@ -121,19 +121,21 @@ __substitute_arg_id(basic_format_arg<_Context> __format_arg) {
 /// explicitly.
 // TODO FMT Use an ABI tag for this struct.
 struct __fields {
-  uint8_t __sign_ : 1 {false};
-  uint8_t __alternate_form_ : 1 {false};
-  uint8_t __zero_padding_ : 1 {false};
-  uint8_t __precision_ : 1 {false};
-  uint8_t __locale_specific_form_ : 1 {false};
-  uint8_t __type_ : 1 {false};
+  uint16_t __sign_                 : 1 {false};
+  uint16_t __alternate_form_       : 1 {false};
+  uint16_t __zero_padding_         : 1 {false};
+  uint16_t __precision_            : 1 {false};
+  uint16_t __locale_specific_form_ : 1 {false};
+  uint16_t __type_                 : 1 {false};
   // Determines the valid values for fill.
   //
   // Originally the fill could be any character except { and }. Range-based
   // formatters use the colon to mark the beginning of the
   // underlying-format-spec. To avoid parsing ambiguities these formatter
   // specializations prohibit the use of the colon as a fill character.
-  uint8_t __use_range_fill_ : 1 {false};
+  uint16_t __use_range_fill_ : 1 {false};
+  uint16_t __clear_brackets_ : 1 {false};
+  uint16_t __consume_all_    : 1 {false};
 };
 
 // By not placing this constant in the formatter class it's not duplicated for
@@ -143,21 +145,26 @@ inline constexpr __fields __fields_integral{
     .__alternate_form_       = true,
     .__zero_padding_         = true,
     .__locale_specific_form_ = true,
-    .__type_                 = true};
+    .__type_                 = true,
+    .__consume_all_          = true};
 inline constexpr __fields __fields_floating_point{
     .__sign_                 = true,
     .__alternate_form_       = true,
     .__zero_padding_         = true,
     .__precision_            = true,
     .__locale_specific_form_ = true,
-    .__type_                 = true};
-inline constexpr __fields __fields_string{.__precision_ = true, .__type_ = true};
-inline constexpr __fields __fields_pointer{.__type_ = true};
+    .__type_                 = true,
+    .__consume_all_          = true};
+inline constexpr __fields __fields_string{.__precision_ = true, .__type_ = true, .__consume_all_ = true};
+inline constexpr __fields __fields_pointer{.__type_ = true, .__consume_all_ = true};
 
 #  if _LIBCPP_STD_VER >= 23
 inline constexpr __fields __fields_tuple{.__use_range_fill_ = true};
 inline constexpr __fields __fields_range{.__use_range_fill_ = true};
 inline constexpr __fields __fields_fill_align_width{};
+#  endif
+#  if _LIBCPP_STD_VER >= 26
+inline constexpr __fields __fields_complex{.__type_ = true, .__use_range_fill_ = true, .__clear_brackets_ = true};
 #  endif
 
 enum class _LIBCPP_ENUM_VIS __alignment : uint8_t {
@@ -200,7 +207,9 @@ enum class _LIBCPP_ENUM_VIS __type : uint8_t {
   __fixed_upper_case,
   __general_lower_case,
   __general_upper_case,
-  __debug
+  __debug,
+  __range,
+  __stream_like,
 };
 
 struct __std {
@@ -208,6 +217,10 @@ struct __std {
   __sign __sign_ : 2;
   bool __alternate_form_ : 1;
   bool __locale_specific_form_ : 1;
+  // When this flag is set the value will get a suffix 'i' to mark it as an imaginary value.
+  // This is controlled by the engine and not the user. (it is only used by the floating-point formatter.)
+  // Review note this was an unused bit.
+  bool __imaginary_value_ : 1 {false};
   __type __type_;
 };
 
@@ -331,15 +344,17 @@ public:
     if (__fields.__locale_specific_form_ && __parse_locale_specific_form(__begin) && __begin == __end)
       return __begin;
 
-    if (__fields.__type_) {
+    if (__fields.__clear_brackets_ && __parse_clear_brackets(__begin) && __begin == __end)
+      return __begin;
+
+    if (__fields.__type_)
       __parse_type(__begin);
 
-      // When __type_ is false the calling parser is expected to do additional
-      // parsing. In that case that parser should do the end of format string
-      // validation.
-      if (__begin != __end && *__begin != _CharT('}'))
-        std::__throw_format_error("The format-spec should consume the input or end with a '}'");
-    }
+    if (!__fields.__consume_all_)
+      return __begin;
+
+    if (__begin != __end && *__begin != _CharT('}'))
+      std::__throw_format_error("The format-spec should consume the input or end with a '}'");
 
     return __begin;
   }
@@ -378,7 +393,7 @@ public:
   __sign __sign_ : 2 {__sign::__default};
   bool __alternate_form_ : 1 {false};
   bool __locale_specific_form_ : 1 {false};
-  bool __reserved_0_ : 1 {false};
+  bool __clear_brackets_       : 1 {false};
   __type __type_{__type::__default};
 
   // These flags are only used for formatting chrono. Since the struct has
@@ -626,6 +641,16 @@ private:
   }
 
   template <contiguous_iterator _Iterator>
+  _LIBCPP_HIDE_FROM_ABI constexpr bool __parse_clear_brackets(_Iterator& __begin) {
+    if (*__begin != _CharT('n'))
+      return false;
+
+    __clear_brackets_ = true;
+    ++__begin;
+    return true;
+  }
+
+  template <contiguous_iterator _Iterator>
   _LIBCPP_HIDE_FROM_ABI constexpr void __parse_type(_Iterator& __begin) {
     // Determines the type. It does not validate whether the selected type is
     // valid. Most formatters have optional fields that are only allowed for
@@ -687,6 +712,14 @@ private:
 #  if _LIBCPP_STD_VER >= 23
     case '?':
       __type_ = __type::__debug;
+      break;
+#  endif
+#  if _LIBCPP_STD_VER >= 26
+    case 'r':
+      __type_ = __type::__range;
+      break;
+    case 'S':
+      __type_ = __type::__stream_like;
       break;
 #  endif
     default:
