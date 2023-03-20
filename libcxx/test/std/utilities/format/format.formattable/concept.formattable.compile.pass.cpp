@@ -17,7 +17,6 @@
 
 #include <array>
 #include <bitset>
-#include <bitset>
 #include <chrono>
 #include <complex>
 #include <concepts>
@@ -179,7 +178,6 @@ void test_P1361() {
 template <class CharT>
 void test_P1636() {
   assert_is_not_formattable<std::basic_streambuf<CharT>, CharT>();
-  assert_is_not_formattable<std::bitset<42>, CharT>();
   assert_is_not_formattable<std::error_code, CharT>();
 #ifndef TEST_HAS_NO_FILESYSTEM_LIBRARY
   assert_is_not_formattable<std::filesystem::path, CharT>();
@@ -249,6 +247,21 @@ void test_PXXXX() {
   assert_is_formattable<std::complex<float>, CharT>();
   assert_is_formattable<std::complex<double>, CharT>();
   assert_is_formattable<std::complex<long double>, CharT>();
+
+  assert_is_formattable<std::bitset<42>, CharT>();
+  assert_is_formattable<std::bitset<0>::reference, CharT>(); // libc++ uses a specialization
+  assert_is_formattable<std::bitset<1>::reference, CharT>(); // libc++ uses a specialization
+  assert_is_formattable<std::bitset<42>::reference, CharT>();
+  assert_is_formattable<std::bitset<1024>::reference, CharT>(); // libc++ does not fit in one "word"
+#  ifdef _LIBCPP_VER
+  // The const_reference shall be a bool.
+  // However libc++ uses a __bit_const_reference<__bitset> when
+  // _LIBCPP_ABI_BITSET_VECTOR_BOOL_CONST_SUBSCRIPT_RETURN_BOOL is defined.
+  assert_is_formattable<std::bitset<0>::const_reference, CharT>(); // libc++ uses a specialization
+  assert_is_formattable<std::bitset<1>::const_reference, CharT>(); // libc++ uses specialization
+  assert_is_formattable<std::bitset<42>::const_reference, CharT>();
+  assert_is_formattable<std::bitset<1024>::const_reference, CharT>(); // libc++ does not fit in one "word"
+#  endif
 #endif // TEST_STD_VER > 23
 }
 

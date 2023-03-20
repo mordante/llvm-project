@@ -203,23 +203,40 @@ consteval size_t __buffer_size() noexcept
        + 1;                          // Reserve space for the sign.
 }
 
-template <unsigned_integral _Tp, class _CharT, class _FormatContext>
-_LIBCPP_HIDE_FROM_ABI typename _FormatContext::iterator __format_integer(
-    _Tp __value,
-    _FormatContext& __ctx,
-    __format_spec::__parsed_specifications<_CharT> __specs,
-    bool __negative,
-    char* __begin,
-    char* __end,
-    const char* __prefix,
-    int __base) {
+// The first stage of __format_integer
+//
+// This writes, if requested, the sign and the prefix.
+// Returns a pointer beyond the last character written, or __begin.
+template <class _CharT>
+_LIBCPP_HIDE_FROM_ABI char* __format_integer_write_prefix(
+    __format_spec::__parsed_specifications<_CharT> __specs, bool __negative, char* __begin, const char* __prefix) {
   char* __first = __formatter::__insert_sign(__begin, __negative, __specs.__std_.__sign_);
   if (__specs.__std_.__alternate_form_ && __prefix)
     while (*__prefix)
       *__first++ = *__prefix++;
 
-  char* __last = __formatter::__to_buffer(__first, __end, __value, __base);
+  return __first;
+}
 
+// The second stage of __format_integer
+//
+// This converts the value to a range of characters.
+// Returns a pointer beyond the last character written.
+template <unsigned_integral _Tp>
+_LIBCPP_HIDE_FROM_ABI char* __format_integer_to_buffer(char* __begin, char* __end, _Tp __value, int __base) {
+  return __formatter::__to_buffer(__begin, __end, __value, __base);
+}
+
+// The third stage of __format_integer
+//
+// This writes the buffer to the output applying the format specifications.
+template <class _CharT>
+_LIBCPP_HIDE_FROM_ABI auto __format_integer_generate_output(
+    auto& __ctx,
+    __format_spec::__parsed_specifications<_CharT> __specs,
+    const char* __begin,
+    const char* __first,
+    const char* __last) -> decltype(__ctx.out()) {
 #  ifndef _LIBCPP_HAS_NO_LOCALIZATION
   if (__specs.__std_.__locale_specific_form_) {
     const auto& __np  = std::use_facet<numpunct<_CharT>>(__ctx.locale());
@@ -261,6 +278,31 @@ _LIBCPP_HIDE_FROM_ABI typename _FormatContext::iterator __format_integer(
     return __formatter::__write(__first, __last, __ctx.out(), __specs);
 
   return __formatter::__write_transformed(__first, __last, __ctx.out(), __specs, __formatter::__hex_to_upper);
+}
+
+// The conversion function of an integer.
+//
+// This function is split in 3 parts.
+// 1. write prefix
+// 2. convert value to the buffer
+// 3. write the output
+//
+// In some cases the value to write is not a simple integral, but a bitset.
+// For the bitset the stages 1 and 3 are identical, so this allows reusing this code.
+template <unsigned_integral _Tp, class _CharT, class _FormatContext>
+_LIBCPP_HIDE_FROM_ABI typename _FormatContext::iterator __format_integer(
+    _Tp __value,
+    _FormatContext& __ctx,
+    __format_spec::__parsed_specifications<_CharT> __specs,
+    bool __negative,
+    char* __begin,
+    char* __end,
+    const char* __prefix,
+    int __base) {
+  char* __first = __formatter::__format_integer_write_prefix(__specs, __negative, __begin, __prefix);
+  char* __last  = __formatter::__format_integer_to_buffer(__first, __end, __value, __base);
+
+  return __formatter::__format_integer_generate_output(__ctx, __specs, __begin, __first, __last);
 }
 
 template <unsigned_integral _Tp, class _CharT, class _FormatContext>

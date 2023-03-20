@@ -165,7 +165,17 @@ inline constexpr __fields __fields_fill_align_width{};
 #  endif
 #  if _LIBCPP_STD_VER >= 26
 inline constexpr __fields __fields_complex{.__type_ = true, .__use_range_fill_ = true, .__clear_brackets_ = true};
-#  endif
+inline constexpr __fields __fields_bitset{
+    .__sign_                 = true,
+    .__alternate_form_       = true,
+    .__zero_padding_         = true,
+    .__locale_specific_form_ = true,
+    // Manually parse the type since there may be an underlying range.
+    // or an __allow_range_type_
+    .__type_           = true,
+    .__use_range_fill_ = true,
+    .__clear_brackets_ = true};
+#  endif //  _LIBCPP_STD_VER >= 26
 
 enum class _LIBCPP_ENUM_VIS __alignment : uint8_t {
   /// No alignment is set in the format string.
@@ -881,6 +891,43 @@ _LIBCPP_HIDE_FROM_ABI constexpr void __process_display_type_pointer(__format_spe
     std::__throw_format_error("The format-spec type has a type not supported for a pointer argument");
   }
 }
+
+#  if _LIBCPP_STD_VER >= 26
+template <class _CharT>
+_LIBCPP_HIDE_FROM_ABI constexpr void __process_parsed_bitset(__parser<_CharT>& __parser) {
+  switch (__parser.__type_) {
+  case __format_spec::__type::__binary_lower_case:
+  case __format_spec::__type::__binary_upper_case:
+  case __format_spec::__type::__octal:
+  case __format_spec::__type::__decimal:
+  case __format_spec::__type::__hexadecimal_lower_case:
+  case __format_spec::__type::__hexadecimal_upper_case:
+    if (__parser.__alignment_ == __alignment::__default)
+      __parser.__alignment_ = __alignment::__right;
+    return;
+
+  case __format_spec::__type::__default:
+    __parser.__type_ = __format_spec::__type::__string;
+    [[fallthrough]];
+  case __format_spec::__type::__string:
+  case __format_spec::__type::__range:
+    if (__parser.__alignment_ == __alignment::__default)
+      __parser.__alignment_ = __alignment::__left;
+    break;
+
+  default:
+    std::__throw_format_error("The format-spec type has a type not supported for a bitset argument");
+  }
+
+  // This validation routine rejects sign, alternate, and zero_padding
+  // maybe refactor to a new better named function
+  // TODO FMT ^
+  __process_display_type_bool_string(__parser);
+
+  if (__parser.__locale_specific_form_)
+    std::__throw_format_error("A locale-specific form field isn't allowed in this format-spec");
+}
+#  endif //  _LIBCPP_STD_VER >= 26
 
 template <contiguous_iterator _Iterator>
 struct __column_width_result {
