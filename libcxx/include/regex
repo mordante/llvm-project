@@ -789,6 +789,8 @@ typedef regex_token_iterator<wstring::const_iterator> wsregex_token_iterator;
 #include <__algorithm/search.h>
 #include <__assert> // all public C++ headers provide the assertion handler
 #include <__config>
+#include <__format/concepts.h>
+#include <__format/formatter_string.h>
 #include <__iterator/back_insert_iterator.h>
 #include <__iterator/wrap_iter.h>
 #include <__locale>
@@ -5462,6 +5464,29 @@ operator<<(basic_ostream<_CharT, _ST>& __os, const sub_match<_BiIter>& __m)
 {
     return __os << __m.str();
 }
+
+#if _LIBCPP_STD_VER >= 26
+template <class _BidirectionalIterator, __fmt_char_type _CharT>
+struct _LIBCPP_TEMPLATE_VIS formatter<sub_match<_BidirectionalIterator>, _CharT> : public __formatter_string<_CharT> {
+    using _Base = __formatter_string<_CharT>;
+
+    template <class _FormatContext>
+      requires contiguous_iterator<_BidirectionalIterator>
+    _LIBCPP_HIDE_FROM_ABI _FormatContext::iterator
+    format(sub_match<_BidirectionalIterator> __value, _FormatContext& __ctx) const {
+        return _Base::format(
+            __value.matched ? basic_string_view<_CharT>{__value.first, __value.second} : basic_string_view<_CharT>{},
+            __ctx);
+    }
+
+    template <class _FormatContext>
+    _LIBCPP_HIDE_FROM_ABI _FormatContext::iterator
+    format(sub_match<_BidirectionalIterator> __value, _FormatContext& __ctx) const {
+        basic_string<_CharT> __str = __value.str();
+        return _Base::format(basic_string_view<_CharT>{__str.data(), __str.size()}, __ctx);
+    }
+};
+#endif // _LIBCPP_STD_VER >= 26
 
 typedef match_results<const char*>             cmatch;
 typedef match_results<string::const_iterator>  smatch;

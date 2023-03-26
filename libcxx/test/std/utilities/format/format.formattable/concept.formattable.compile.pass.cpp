@@ -183,10 +183,6 @@ void test_P1636() {
   assert_is_not_formattable<std::filesystem::path, CharT>();
 #endif
   assert_is_not_formattable<std::shared_ptr<int>, CharT>();
-#ifndef TEST_HAS_NO_LOCALIZATION
-  if constexpr (!std::same_as<CharT, int>) // sub_match only works with proper character types
-    assert_is_not_formattable<std::sub_match<CharT*>, CharT>();
-#endif
 #ifndef TEST_HAS_NO_THREADS
   assert_is_formattable<std::thread::id, CharT>();
 #endif
@@ -261,6 +257,10 @@ void test_PXXXX() {
   assert_is_formattable<std::bitset<1>::const_reference, CharT>(); // libc++ uses specialization
   assert_is_formattable<std::bitset<42>::const_reference, CharT>();
   assert_is_formattable<std::bitset<1024>::const_reference, CharT>(); // libc++ does not fit in one "word"
+#  endif
+#  ifndef TEST_HAS_NO_LOCALIZATION
+  if constexpr (!std::same_as<CharT, int>) // sub_match only works with proper character types
+    assert_is_formattable<std::sub_match<CharT*>, CharT>();
 #  endif
 #endif // TEST_STD_VER > 23
 }
