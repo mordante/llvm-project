@@ -19,6 +19,7 @@
 #include <__algorithm/copy_n.h>
 #include <__algorithm/find_if.h>
 #include <__algorithm/min.h>
+#include <__algorithm/ranges_any_of.h>
 #include <__assert>
 #include <__concepts/arithmetic.h>
 #include <__concepts/same_as.h>
@@ -36,7 +37,10 @@
 #include <__type_traits/common_type.h>
 #include <__type_traits/is_trivially_copyable.h>
 #include <__variant/monostate.h>
+#include <array>
 #include <cstdint>
+#include <span>
+#include <string>
 #include <string_view>
 
 #if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
@@ -175,6 +179,8 @@ inline constexpr __fields __fields_bitset{
     .__type_           = true,
     .__use_range_fill_ = true,
     .__clear_brackets_ = true};
+
+inline constexpr __fields __fields_string_non_truncate{.__type_ = true};
 #  endif //  _LIBCPP_STD_VER >= 26
 
 enum class _LIBCPP_ENUM_VIS __alignment : uint8_t {
@@ -221,6 +227,14 @@ enum class _LIBCPP_ENUM_VIS __type : uint8_t {
   __range,
   __stream_like,
 };
+
+inline constexpr array __types_integer{
+    __type::__binary_lower_case,
+    __type::__binary_upper_case,
+    __type::__decimal,
+    __type::__octal,
+    __type::__hexadecimal_lower_case,
+    __type::__hexadecimal_upper_case};
 
 struct __std {
   __alignment __alignment_ : 3;
@@ -367,6 +381,39 @@ public:
       std::__throw_format_error("The format-spec should consume the input or end with a '}'");
 
     return __begin;
+  }
+
+  //  template <__type... __types>
+  _LIBCPP_HIDE_FROM_ABI constexpr void
+  __validate(__fields __fields, string __name, span<const __type> __types = {}) const {
+    if (!__fields.__sign_ && __sign_ != __sign::__default)
+      std::__throw_format_error(("The format specification for " + __name + " does not allow the sign option").c_str());
+
+    if (!__fields.__alternate_form_ && __alternate_form_)
+      std::__throw_format_error(
+          ("The format specification for " + __name + " does not allow the alternate form option").c_str());
+
+    if (!__fields.__zero_padding_ && __alignment_ == __alignment::__zero_padding)
+      std::__throw_format_error(
+          ("The format specification for " + __name + " does not allow the zero-padding option").c_str());
+
+    if (!__fields.__precision_ && __precision_ != -1) // Works both when the precision has a value or an arg-id.
+      std::__throw_format_error(
+          ("The format specification for " + __name + " does not allow the precision option").c_str());
+
+    if (!__fields.__locale_specific_form_ && __locale_specific_form_)
+      std::__throw_format_error(
+          ("The format specification for " + __name + " does not allow the locale-specific form option").c_str());
+    /*
+        if (!__fields.__type_ || sizeof...(__types) == 0) // XXX Need to consider
+          return;
+
+        if (((false || ... || (__type_ == __types))))
+          return;
+    */
+    if (!__types.empty() && !ranges::any_of(__types, [&](__type __t) { return __type_ == __t; }))
+      std::__throw_format_error(
+          ("The format specification for " + __name + " uses an unsupported display type").c_str());
   }
 
   /// \returns the `__parsed_specifications` with the resolved dynamic sizes..

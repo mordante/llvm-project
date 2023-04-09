@@ -114,7 +114,7 @@ _LIBCPP_CTAD_SUPPORTED_FOR_TYPE(unique_lock);
 template <class _Mutex>
 void unique_lock<_Mutex>::lock() {
   if (__m_ == nullptr)
-    __throw_system_error(EPERM, "unique_lock::lock: references null mutex");
+    __throw_system_error(EPERM, "unique_lock::lock: references null mutex"); // TAG no ADL and the recursion issue
   if (__owns_)
     __throw_system_error(EDEADLK, "unique_lock::lock: already locked");
   __m_->lock();

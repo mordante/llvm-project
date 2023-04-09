@@ -29,6 +29,19 @@ _LIBCPP_BEGIN_NAMESPACE_STD
 
 #if _LIBCPP_STD_VER >= 20
 
+
+template <__fmt_char_type _CharT,  class _FormatContext>
+_LIBCPP_HIDE_FROM_ABI _FormatContext::iterator
+__format_string(basic_string_view<_CharT> __str, _FormatContext& __ctx, __format_spec::__parsed_specifications<_CharT> __specs) {
+#  if _LIBCPP_STD_VER >= 23
+    if (__specs.__std_.__type_ == __format_spec::__type::__debug)
+      return __formatter::__format_escaped_string(__str, __ctx.out(), __specs);
+#  endif
+
+    return __formatter::__write_string(__str, __ctx.out(), __specs);
+}
+
+
 template <__fmt_char_type _CharT>
 struct _LIBCPP_TEMPLATE_VIS __formatter_string {
 public:
@@ -42,12 +55,7 @@ public:
   template <class _FormatContext>
   _LIBCPP_HIDE_FROM_ABI typename _FormatContext::iterator
   format(basic_string_view<_CharT> __str, _FormatContext& __ctx) const {
-#  if _LIBCPP_STD_VER >= 23
-    if (__parser_.__type_ == __format_spec::__type::__debug)
-      return __formatter::__format_escaped_string(__str, __ctx.out(), __parser_.__get_parsed_std_specifications(__ctx));
-#  endif
-
-    return __formatter::__write_string(__str, __ctx.out(), __parser_.__get_parsed_std_specifications(__ctx));
+    return std::__format_string(__str, __ctx, __parser_.__get_parsed_std_specifications(__ctx));
   }
 
 #  if _LIBCPP_STD_VER >= 23

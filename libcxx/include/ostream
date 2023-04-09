@@ -175,6 +175,7 @@ basic_ostream<wchar_t, traits>& operator<<(basic_ostream<wchar_t, traits>&, cons
 #include <__type_traits/is_base_of.h>
 #include <__type_traits/void_t.h>
 #include <__utility/declval.h>
+#include <__system_error/error_code.h>
 #include <bitset>
 #include <ios>
 #include <locale>

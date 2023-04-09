@@ -31,6 +31,7 @@
 #include <set>
 #include <stack>
 #include <span>
+#include <system_error>
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
@@ -178,7 +179,6 @@ void test_P1361() {
 template <class CharT>
 void test_P1636() {
   assert_is_not_formattable<std::basic_streambuf<CharT>, CharT>();
-  assert_is_not_formattable<std::error_code, CharT>();
 #ifndef TEST_HAS_NO_FILESYSTEM_LIBRARY
   assert_is_not_formattable<std::filesystem::path, CharT>();
 #endif
@@ -262,6 +262,16 @@ void test_PXXXX() {
   if constexpr (!std::same_as<CharT, int>) // sub_match only works with proper character types
     assert_is_formattable<std::sub_match<CharT*>, CharT>();
 #  endif
+  // This formatter is only enabled for the char specialization.
+  if constexpr (std::same_as<CharT, char>) {
+    assert_is_formattable<std::error_code, CharT>();
+    assert_is_formattable<std::error_condition, CharT>();
+    assert_is_formattable<std::error_category, CharT>();
+  } else {
+    assert_is_not_formattable<std::error_code, CharT>();
+    assert_is_not_formattable<std::error_condition, CharT>();
+    assert_is_not_formattable<std::error_category, CharT>();
+  }
 #endif // TEST_STD_VER > 23
 }
 

@@ -1058,7 +1058,6 @@ _LIBCPP_END_NAMESPACE_STD
 #  include <limits>
 #  include <new>
 #  include <stdexcept>
-#  include <system_error>
 #  include <type_traits>
 #  include <typeinfo>
 #endif

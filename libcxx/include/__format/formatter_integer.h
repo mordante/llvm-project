@@ -26,13 +26,25 @@
 #  pragma GCC system_header
 #endif
 
-    _LIBCPP_BEGIN_NAMESPACE_STD
+_LIBCPP_BEGIN_NAMESPACE_STD
 
 #if _LIBCPP_STD_VER >= 20
 
-    template <__fmt_char_type _CharT>
-    struct _LIBCPP_TEMPLATE_VIS __formatter_integer {
+template <integral _Tp, class _FormatContext, class _CharT>
+_LIBCPP_HIDE_FROM_ABI _FormatContext::iterator
+__format_integer(_Tp __value, _FormatContext& __ctx, __format_spec::__parsed_specifications<_CharT> __specs) {
+  if (__specs.__std_.__type_ == __format_spec::__type::__char)
+    return __formatter::__format_char(__value, __ctx.out(), __specs);
 
+  using _Type = __make_32_64_or_128_bit_t<_Tp>;
+  static_assert(!is_same<_Type, void>::value, "unsupported integral type used in __formatter_integer::__format");
+
+  // Reduce the number of instantiation of the integer formatter
+  return __formatter::__format_integer(static_cast<_Type>(__value), __ctx, __specs);
+}
+
+template <__fmt_char_type _CharT>
+struct _LIBCPP_TEMPLATE_VIS __formatter_integer {
 public:
   template <class _ParseContext>
   _LIBCPP_HIDE_FROM_ABI constexpr typename _ParseContext::iterator parse(_ParseContext& __ctx) {
@@ -43,16 +55,7 @@ public:
 
   template <integral _Tp, class _FormatContext>
   _LIBCPP_HIDE_FROM_ABI typename _FormatContext::iterator format(_Tp __value, _FormatContext& __ctx) const {
-    __format_spec::__parsed_specifications<_CharT> __specs = __parser_.__get_parsed_std_specifications(__ctx);
-
-    if (__specs.__std_.__type_ == __format_spec::__type::__char)
-      return __formatter::__format_char(__value, __ctx.out(), __specs);
-
-    using _Type = __make_32_64_or_128_bit_t<_Tp>;
-    static_assert(!is_same<_Type, void>::value, "unsupported integral type used in __formatter_integer::__format");
-
-    // Reduce the number of instantiation of the integer formatter
-    return __formatter::__format_integer(static_cast<_Type>(__value), __ctx, __specs);
+    return std::__format_integer(__value, __ctx, __parser_.__get_parsed_std_specifications(__ctx));
   }
 
   __format_spec::__parser<_CharT> __parser_;
