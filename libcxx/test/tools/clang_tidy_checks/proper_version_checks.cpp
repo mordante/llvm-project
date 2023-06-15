@@ -39,21 +39,21 @@ private:
     if (preprocessor_.getSourceManager().isInMainFile(location))
       return;
 
-    if (condition.starts_with("_LIBCPP_STD_VER") && condition.find(">") != std::string_view::npos &&
+    if (condition.find("_LIBCPP_STD_VER") == 0 && condition.find(">") != std::string_view::npos &&
         condition.find(">=") == std::string_view::npos)
       check_.diag(location, "_LIBCPP_STD_VER >= version should be used instead of _LIBCPP_STD_VER > prev_version");
 
-    else if (condition.starts_with("__cplusplus"))
+    else if (condition.find("__cplusplus") == 0)
       check_.diag(location, "Use _LIBCPP_STD_VER instead of __cplusplus to constrain based on the C++ version");
 
     else if (condition == "_LIBCPP_STD_VER >= 11")
       check_.diag(location, "_LIBCPP_STD_VER >= 11 is always true. Did you mean '#ifndef _LIBCPP_CXX03_LANG'?");
 
-    else if (condition.starts_with("_LIBCPP_STD_VER >= ") &&
-             std::ranges::none_of(std::array{"14", "17", "20", "23", "26"}, [&](auto val) {
-               return condition.find(val) != std::string_view::npos;
-             }))
-      check_.diag(location, "Not a valid value for _LIBCPP_STD_VER. Use 14, 17, 20, 23, or 26");
+    else if (condition.find("_LIBCPP_STD_VER >= ") == 0) {
+      std::array a{"14", "17", "20", "23", "26"};
+      if (std ::none_of(a.begin(), a.end(), [&](auto val) { return condition.find(val) != std::string_view::npos; }))
+        check_.diag(location, "Not a valid value for _LIBCPP_STD_VER. Use 14, 17, 20, 23, or 26");
+    }
   }
 
   clang::Preprocessor& preprocessor_;

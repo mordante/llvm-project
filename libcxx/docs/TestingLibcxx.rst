@@ -112,6 +112,9 @@ The libc++ test suite uses a few optional tools to improve the code quality.
 These tools are:
 - clang-tidy (you might need additional dev packages to compile libc++-specific clang-tidy checks)
 
+These tools are build using the system's default C++ Standard library.
+Therefore this library should meet LLVM's minimum requirement of C++17 support.
+
 Reproducing CI issues locally
 -----------------------------
 

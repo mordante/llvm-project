@@ -19,9 +19,8 @@ AST_MATCHER(clang::UnresolvedLookupExpr, requiresADL) { return Node.requiresADL(
 AST_MATCHER(clang::CallExpr, isOperator) { return llvm::isa<clang::CXXOperatorCallExpr>(Node); }
 
 AST_MATCHER(clang::UnresolvedLookupExpr, isCustomizationPoint) {
-  return std::ranges::any_of(
-      std::array{"swap", "make_error_code", "make_error_condition", "begin", "end", "size", "rend", "rbegin"},
-      [&](const char* func) { return Node.getName().getAsString() == func; });
+  std::array a{"swap", "make_error_code", "make_error_condition", "begin", "end", "size", "rend", "rbegin"};
+  return std::any_of(a.begin(), a.end(), [&](const char* func) { return Node.getName().getAsString() == func; });
 }
 
 AST_MATCHER(clang::CXXMethodDecl, isStatic) { return Node.isStatic(); }

@@ -60,8 +60,7 @@ header_exportable_declarations::header_exportable_declarations(
   }
 
   std::optional<llvm::StringRef> list = Options.get("SkipDeclarations");
-  // TODO(LLVM-17) Remove clang 15 work-around.
-#if defined(__clang_major__) && __clang_major__ < 16
+#if __cplusplus <= 201703L
   if (list) {
     std::string_view s = *list;
     auto b             = s.begin();
@@ -74,35 +73,34 @@ header_exportable_declarations::header_exportable_declarations(
       e = std::find(b, s.end(), ' ');
     }
   }
-#else  // defined(__clang_major__) && __clang_major__ < 16
+#else  // __cplusplus <= 201703
   if (list)
     for (auto decl : std::views::split(*list, ' ')) {
       std::string s;
       std::ranges::copy(decl, std::back_inserter(s)); // use range based constructor
       decls_.emplace(std::move(s));
     }
-#endif // defined(__clang_major__) && __clang_major__ < 16
+#endif // __cplusplus <= 201703
 
   list = Options.get("ExtraDeclarations");
-  // TODO(LLVM-17) Remove clang 15 work-around.
-#if defined(__clang_major__) && __clang_major__ < 16
+#if __cplusplus <= 201703
   if (list) {
     std::string_view s = *list;
     auto b             = s.begin();
     auto e             = std::find(b, s.end(), ' ');
     while (b != e) {
-      std::cout << "using " << std::string_view{b, e} << ";\n";
+      std::cout << "using " << std::string{b, e} << ";\n";
       if (e == s.end())
         break;
       b = e + 1;
       e = std::find(b, s.end(), ' ');
     }
   }
-#else  // defined(__clang_major__) && __clang_major__ < 16
+#else  // __cplusplus <= 201703
   if (list)
     for (auto decl : std::views::split(*list, ' '))
       std::cout << "using " << std::string_view{decl.data(), decl.size()} << ";\n";
-#endif // defined(__clang_major__) && __clang_major__ < 16
+#endif // __cplusplus <= 201703
 }
 
 void header_exportable_declarations::registerMatchers(clang::ast_matchers::MatchFinder* finder) {
@@ -157,7 +155,7 @@ void header_exportable_declarations::registerMatchers(clang::ast_matchers::Match
 static std::string get_qualified_name(const clang::NamedDecl& decl) {
   std::string result = decl.getQualifiedNameAsString();
 
-  if (result.starts_with("std::__1::"))
+  if (result.find("std::__1::") == 0)
     result.erase(5, 5);
 
   return result;
@@ -229,7 +227,7 @@ void header_exportable_declarations::check(const clang::ast_matchers::MatchFinde
       if (clang::Module* M = decl->getOwningModule(); M && M->Kind != clang::Module::ModulePartitionInterface)
         return;
 
-    if (decls_.contains(name))
+    if (decls_.count(name))
       return;
 
     std::cout << "using " << std::string{name} << ";\n";
