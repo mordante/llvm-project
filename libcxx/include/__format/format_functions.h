@@ -91,11 +91,20 @@ public:
   }
 
   template <class _Tp>
+    requires __formattable_with<_Tp, __format_context<_CharT>>
   _LIBCPP_HIDE_FROM_ABI constexpr void __enable() {
     __parse_ = [](basic_format_parse_context<_CharT>& __ctx) {
       formatter<_Tp, _CharT> __f;
       __ctx.advance_to(__f.parse(__ctx));
     };
+  }
+
+  template <class _Tp>
+  _LIBCPP_HIDE_FROM_ABI constexpr void __enable() {
+    // Avoids the throw set in the constructor.
+    // Otherwise two diagnostics will be issued.
+    __parse_ = [](basic_format_parse_context<_CharT>&) {};
+    __format::__diagnose_invalid_formatter<__format_context<_CharT>, _Tp>();
   }
 
   // Before calling __parse the proper handler needs to be set with __enable.
