@@ -16,11 +16,15 @@
 
 #include <__concepts/arithmetic.h>
 #include <__concepts/same_as.h>
+#include <__concepts/semiregular.h>
 #include <__config>
 #include <__format/concepts.h>
 #include <__format/format_arg.h>
+#include <__format/format_parse_context.h>
 #include <__type_traits/conditional.h>
 #include <__type_traits/extent.h>
+#include <__type_traits/is_assignable.h>
+#include <__type_traits/is_constructible.h>
 #include <__type_traits/remove_const.h>
 #include <cstdint>
 #include <string>
@@ -227,16 +231,6 @@ template <class _Context, class _Tp>
         { __f.parse(__pc) } -> same_as<typename decltype(__pc)::iterator>;
       };
 
-  constexpr bool __has_format_function = requires(_Formatter& __f, _Tp&& __t, _Context __fc) {
-    { __f.format(__t, __fc) };
-  };
-  constexpr bool __is_format_function_const_qualified = requires(const _Formatter& __cf, _Tp&& __t, _Context __fc) {
-    { __cf.format(__t, __fc) };
-  };
-  constexpr bool __correct_format_function_return_type = requires(_Formatter& __f, _Tp&& __t, _Context __fc) {
-    { __f.format(__t, __fc)->same_as<typename _Context::iterator> };
-  };
-
   // The reason these static_asserts are placed in an if-constexpr-chain is to
   // only show one error. For example, when the formatter is not specialized it
   // would show all static_assert messages. With this chain the compiler only
@@ -253,17 +247,37 @@ template <class _Context, class _Tp>
   else if constexpr (!__correct_parse_function_return_type)
     static_assert(false, "The required formatter specialization's parse function does not return the required type.");
 
-  else if constexpr (!__has_format_function)
-    static_assert(
-        false, "The required formatter specialization does not have a format function taking the proper arguments.");
-  else if constexpr (!__is_format_function_const_qualified)
-    static_assert(false, "The required formatter specialization's format function is not const qualified.");
-  else if constexpr (!__correct_format_function_return_type)
-    static_assert(false, "The required formatter specialization's format function does not return the required type.");
+  else {
+    // During constant evaluation this function is called, but the format
+    // member function has not been evaluated. This means these functions
+    // can't be evaluated at that time.
+    //
+    // Note this else branch should never been taken during constant
+    // eveluation, the static_asserts in one of the branches above should
+    // trigger.
+    constexpr bool __has_format_function = requires(_Formatter& __f, _Tp&& __t, _Context __fc) {
+      { __f.format(__t, __fc) };
+    };
+    constexpr bool __is_format_function_const_qualified = requires(const _Formatter& __cf, _Tp&& __t, _Context __fc) {
+      { __cf.format(__t, __fc) };
+    };
+    constexpr bool __correct_format_function_return_type = requires(_Formatter& __f, _Tp&& __t, _Context __fc) {
+      { __f.format(__t, __fc)->same_as<typename _Context::iterator> };
+    };
 
-  else
-    // This should not happen; it makes sure the code is ill-formed.
-    static_assert(false, "The required formatter specialization is not formattable with its context.");
+    if constexpr (!__has_format_function)
+      static_assert(
+          false, "The required formatter specialization does not have a format function taking the proper arguments.");
+    else if constexpr (!__is_format_function_const_qualified)
+      static_assert(false, "The required formatter specialization's format function is not const qualified.");
+    else if constexpr (!__correct_format_function_return_type)
+      static_assert(
+          false, "The required formatter specialization's format function does not return the required type.");
+
+    else
+      // This should not happen; it makes sure the code is ill-formed.
+      static_assert(false, "The required formatter specialization is not formattable with its context.");
+  }
 }
 
 // The Psuedo constructor is constrained per [format.arg]/4.
